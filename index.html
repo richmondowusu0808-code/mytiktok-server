@@ -1,1 +1,798 @@
+<!DOCTYPE html><html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyTikTok</title><style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
 
+    body {
+        font-family: Arial, sans-serif;
+        background: #000;
+        color: #fff;
+        overflow-x: hidden;
+    }
+
+    button,
+    input,
+    textarea {
+        font: inherit;
+    }
+
+    button {
+        cursor: pointer;
+    }
+
+    /* Header */
+    header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 15px;
+        z-index: 1000;
+        border-bottom: 1px solid #222;
+    }
+
+    .logo {
+        font-size: 23px;
+        font-weight: bold;
+    }
+
+    .header-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .header-buttons button {
+        background: #222;
+        color: #fff;
+        border: 0;
+        border-radius: 20px;
+        padding: 8px 13px;
+    }
+
+    /* Feed */
+    #feed {
+        width: 100%;
+        height: 100vh;
+        overflow-y: auto;
+        scroll-snap-type: y mandatory;
+        padding-top: 60px;
+    }
+
+    .video-card {
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 60px);
+        min-height: 500px;
+        scroll-snap-align: start;
+        background: #111;
+        overflow: hidden;
+    }
+
+    .video-card video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .video-info {
+        position: absolute;
+        left: 15px;
+        right: 80px;
+        bottom: 25px;
+        z-index: 5;
+        text-shadow: 0 1px 4px #000;
+    }
+
+    .username {
+        font-weight: bold;
+        font-size: 18px;
+        margin-bottom: 8px;
+    }
+
+    .caption {
+        font-size: 15px;
+        line-height: 1.4;
+    }
+
+    /* Side buttons */
+    .actions {
+        position: absolute;
+        right: 12px;
+        bottom: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+        z-index: 10;
+    }
+
+    .action-button {
+        background: rgba(0, 0, 0, 0.45);
+        border: 0;
+        color: #fff;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        font-size: 24px;
+    }
+
+    .like-count {
+        font-size: 13px;
+        margin-top: -12px;
+    }
+
+    /* Login modal */
+    .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        padding: 20px;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-box {
+        width: 100%;
+        max-width: 400px;
+        background: #181818;
+        border-radius: 18px;
+        padding: 25px;
+    }
+
+    .modal-box h2 {
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .modal-box input,
+    .modal-box textarea {
+        width: 100%;
+        background: #252525;
+        color: #fff;
+        border: 1px solid #444;
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 12px;
+        outline: none;
+    }
+
+    .modal-box textarea {
+        resize: vertical;
+        min-height: 90px;
+    }
+
+    .primary {
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        padding: 12px;
+        background: #fe2c55;
+        color: white;
+        font-weight: bold;
+        margin-top: 5px;
+    }
+
+    .secondary {
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        padding: 12px;
+        background: #333;
+        color: white;
+        margin-top: 10px;
+    }
+
+    .switch {
+        text-align: center;
+        margin-top: 15px;
+        font-size: 14px;
+        color: #aaa;
+    }
+
+    .switch button {
+        background: none;
+        border: 0;
+        color: #25f4ee;
+    }
+
+    .close {
+        float: right;
+        background: none;
+        color: #fff;
+        border: 0;
+        font-size: 24px;
+    }
+
+    /* Upload */
+    #uploadModal .modal-box {
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .file-label {
+        display: block;
+        background: #252525;
+        border: 1px dashed #666;
+        padding: 20px;
+        text-align: center;
+        border-radius: 10px;
+        margin-bottom: 12px;
+    }
+
+    #videoFile {
+        display: none;
+    }
+
+    /* Comments */
+    .comments-box {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .comment {
+        padding: 10px 0;
+        border-bottom: 1px solid #333;
+    }
+
+    .comment strong {
+        margin-right: 6px;
+    }
+
+    #loading {
+        height: calc(100vh - 60px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #aaa;
+    }
+
+    .empty {
+        text-align: center;
+        padding: 50px 20px;
+        color: #aaa;
+    }
+
+    @media (min-width: 700px) {
+        .video-card {
+            width: 430px;
+            margin: 0 auto;
+        }
+
+        #feed {
+            background: #080808;
+        }
+    }
+</style>
+
+</head><body><header>
+    <div class="logo">🔥 MyTikTok</div><div class="header-buttons">
+    <button id="loginButton" onclick="openAuth()">Login</button>
+    <button id="uploadButton" onclick="openUpload()">＋ Upload</button>
+</div>
+
+</header><main id="feed">
+    <div id="loading">Loading videos...</div>
+</main><!-- AUTH MODAL --><div class="modal" id="authModal">
+    <div class="modal-box">
+        <button class="close" onclick="closeModal('authModal')">×</button>    <h2 id="authTitle">Login</h2>
+
+    <input
+        id="username"
+        type="text"
+        placeholder="Username"
+        autocomplete="username"
+    >
+
+    <input
+        id="password"
+        type="password"
+        placeholder="Password"
+        autocomplete="current-password"
+    >
+
+    <button class="primary" onclick="submitAuth()">Login</button>
+
+    <div class="switch">
+        <span id="switchText">Don't have an account?</span>
+        <button onclick="toggleAuth()">Sign up</button>
+    </div>
+</div>
+
+</div><!-- UPLOAD MODAL --><div class="modal" id="uploadModal">
+    <div class="modal-box">
+        <button class="close" onclick="closeModal('uploadModal')">×</button>    <h2>Upload Video</h2>
+
+    <label class="file-label" for="videoFile">
+        🎥 Choose a video
+    </label>
+
+    <input
+        id="videoFile"
+        type="file"
+        accept="video/*"
+    >
+
+    <textarea
+        id="caption"
+        placeholder="Write a caption..."
+    ></textarea>
+
+    <button class="primary" onclick="uploadVideo()">
+        Upload Video
+    </button>
+</div>
+
+</div><!-- COMMENTS MODAL --><div class="modal" id="commentsModal">
+    <div class="modal-box">
+        <button class="close" onclick="closeModal('commentsModal')">×</button>    <h2>Comments</h2>
+
+    <div class="comments-box" id="commentsList">
+        Loading...
+    </div>
+
+    <textarea
+        id="newComment"
+        placeholder="Write a comment..."
+    ></textarea>
+
+    <button class="primary" onclick="sendComment()">
+        Comment
+    </button>
+</div>
+
+</div><script>
+    const API = "https://mytiktok-server.onrender.com";
+
+    let currentUser = localStorage.getItem("mytiktok_username");
+    let authMode = "login";
+    let currentCommentVideo = null;
+
+    /*
+     * AUTH
+     */
+
+    function openAuth() {
+        if (currentUser) {
+            logout();
+            return;
+        }
+
+        document.getElementById("authModal").classList.add("active");
+    }
+
+    function toggleAuth() {
+        authMode = authMode === "login" ? "signup" : "login";
+
+        document.getElementById("authTitle").textContent =
+            authMode === "login" ? "Login" : "Create Account";
+
+        document.querySelector("#authModal .primary").textContent =
+            authMode === "login" ? "Login" : "Sign Up";
+
+        document.getElementById("switchText").textContent =
+            authMode === "login"
+                ? "Don't have an account?"
+                : "Already have an account?";
+
+        document.querySelector("#authModal .switch button").textContent =
+            authMode === "login" ? "Sign up" : "Login";
+    }
+
+    async function submitAuth() {
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value;
+
+        if (!username || !password) {
+            alert("Enter username and password.");
+            return;
+        }
+
+        const endpoint =
+            authMode === "login" ? "/login" : "/signup";
+
+        try {
+            const response = await fetch(API + endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username,
+                    password
+                })
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                alert(data.message || "Something went wrong.");
+                return;
+            }
+
+            if (authMode === "login") {
+                currentUser = data.username;
+
+                localStorage.setItem(
+                    "mytiktok_username",
+                    currentUser
+                );
+
+                closeModal("authModal");
+                updateHeader();
+
+                alert("Login successful!");
+            } else {
+                alert("Account created. You can now login.");
+
+                authMode = "login";
+                document.getElementById("authTitle").textContent = "Login";
+                document.querySelector("#authModal .primary").textContent = "Login";
+
+                document.getElementById("switchText").textContent =
+                    "Don't have an account?";
+
+                document.querySelector("#authModal .switch button").textContent =
+                    "Sign up";
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert("Could not connect to the server.");
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem("mytiktok_username");
+        currentUser = null;
+        updateHeader();
+        alert("You have logged out.");
+    }
+
+    function updateHeader() {
+        const loginButton = document.getElementById("loginButton");
+
+        loginButton.textContent =
+            currentUser ? "Logout" : "Login";
+    }
+
+    /*
+     * VIDEO FEED
+     */
+
+    async function loadVideos() {
+        const feed = document.getElementById("feed");
+
+        try {
+            const response = await fetch(API + "/videos");
+            const videos = await response.json();
+
+            feed.innerHTML = "";
+
+            if (!videos.length) {
+                feed.innerHTML = `
+                    <div class="empty">
+                        <h2>No videos yet</h2>
+                        <p>Be the first person to upload a video!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            videos.forEach(video => {
+                const card = document.createElement("div");
+                card.className = "video-card";
+
+                card.innerHTML = `
+                    <video
+                        src="${escapeHtml(video.video)}"
+                        controls
+                        playsinline
+                        loop
+                        preload="metadata"
+                    ></video>
+
+                    <div class="video-info">
+                        <div class="username">
+                            @${escapeHtml(video.username || "user")}
+                        </div>
+
+                        <div class="caption">
+                            ${escapeHtml(video.caption || "")}
+                        </div>
+                    </div>
+
+                    <div class="actions">
+
+                        <button
+                            class="action-button"
+                            onclick="likeVideo(${video.id}, this)"
+                        >
+                            ❤️
+                        </button>
+
+                        <div class="like-count">
+                            ${video.likes || 0}
+                        </div>
+
+                        <button
+                            class="action-button"
+                            onclick="openComments(${video.id})"
+                        >
+                            💬
+                        </button>
+
+                    </div>
+                `;
+
+                feed.appendChild(card);
+            });
+
+            setupVideoAutoplay();
+
+        } catch (error) {
+            console.error(error);
+
+            feed.innerHTML = `
+                <div class="empty">
+                    <h2>Unable to load videos</h2>
+                    <p>Check your internet connection and try again.</p>
+                </div>
+            `;
+        }
+    }
+
+    /*
+     * LIKES
+     */
+
+    async function likeVideo(videoId, button) {
+        try {
+            const response = await fetch(
+                API + "/like/" + videoId,
+                {
+                    method: "POST"
+                }
+            );
+
+            const data = await response.json();
+
+            if (data.success) {
+                const countElement =
+                    button.parentElement.querySelector(".like-count");
+
+                countElement.textContent = data.likes;
+            } else {
+                alert(data.message || "Unable to like video.");
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert("Could not connect to the server.");
+        }
+    }
+
+    /*
+     * UPLOAD
+     */
+
+    function openUpload() {
+        if (!currentUser) {
+            alert("Please login before uploading a video.");
+            openAuth();
+            return;
+        }
+
+        document.getElementById("uploadModal").classList.add("active");
+    }
+
+    async function uploadVideo() {
+        const fileInput = document.getElementById("videoFile");
+        const caption = document.getElementById("caption").value.trim();
+
+        if (!fileInput.files.length) {
+            alert("Please choose a video.");
+            return;
+        }
+
+        const file = fileInput.files[0];
+
+        const formData = new FormData();
+
+        formData.append("username", currentUser);
+        formData.append("caption", caption);
+        formData.append("video", file);
+
+        try {
+            const button =
+                document.querySelector("#uploadModal .primary");
+
+            button.disabled = true;
+            button.textContent = "Uploading...";
+
+            const response = await fetch(
+                API + "/upload",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+            const data = await response.json();
+
+            button.disabled = false;
+            button.textContent = "Upload Video";
+
+            if (!data.success) {
+                alert(data.message || "Upload failed.");
+                return;
+            }
+
+            alert("Video uploaded successfully!");
+
+            fileInput.value = "";
+            document.getElementById("caption").value = "";
+
+            closeModal("uploadModal");
+
+            loadVideos();
+
+        } catch (error) {
+            console.error(error);
+
+            alert("Video upload failed.");
+
+            const button =
+                document.querySelector("#uploadModal .primary");
+
+            button.disabled = false;
+            button.textContent = "Upload Video";
+        }
+    }
+
+    /*
+     * COMMENTS
+     *
+     * Your current backend has a POST /comment endpoint,
+     * but it does not yet have a GET /comments endpoint.
+     *
+     * Therefore this frontend will tell you that comments
+     * need the comments GET endpoint when you open them.
+     */
+
+    function openComments(videoId) {
+        currentCommentVideo = videoId;
+
+        document.getElementById("commentsModal")
+            .classList.add("active");
+
+        document.getElementById("commentsList").innerHTML = `
+            <div class="empty">
+                Comments are ready to be added.
+                <br><br>
+                The backend still needs a
+                <strong>GET /comments/&lt;video_id&gt;</strong>
+                endpoint to display existing comments.
+            </div>
+        `;
+    }
+
+    async function sendComment() {
+        if (!currentUser) {
+            alert("Please login before commenting.");
+            return;
+        }
+
+        const comment =
+            document.getElementById("newComment").value.trim();
+
+        if (!comment) {
+            alert("Write a comment first.");
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                API + "/comment",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        video_id: currentCommentVideo,
+                        username: currentUser,
+                        comment: comment
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!data.success) {
+                alert(data.message || "Comment failed.");
+                return;
+            }
+
+            document.getElementById("newComment").value = "";
+
+            alert("Comment added!");
+
+        } catch (error) {
+            console.error(error);
+            alert("Could not connect to the server.");
+        }
+    }
+
+    /*
+     * VIDEO AUTOPLAY
+     */
+
+    function setupVideoAutoplay() {
+        const videos = document.querySelectorAll(
+            ".video-card video"
+        );
+
+        const observer = new IntersectionObserver(
+            entries => {
+                entries.forEach(entry => {
+                    const video = entry.target;
+
+                    if (entry.isIntersecting) {
+                        video.play().catch(() => {});
+                    } else {
+                        video.pause();
+                    }
+                });
+            },
+            {
+                threshold: 0.7
+            }
+        );
+
+        videos.forEach(video => observer.observe(video));
+    }
+
+    /*
+     * MODALS
+     */
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove("active");
+    }
+
+    /*
+     * SECURITY HELPER
+     */
+
+    function escapeHtml(value) {
+        const div = document.createElement("div");
+        div.textContent = value == null ? "" : String(value);
+        return div.innerHTML;
+    }
+
+    /*
+     * START APP
+     */
+
+    updateHeader();
+    loadVideos();
+</script></body>
+</html>
