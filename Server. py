@@ -1,37 +1,43 @@
-from flask import Flask, request, jsonify, send_from_directory
-import sqlite3
+from flask import Flask, request, jsonify
 import os
-from werkzeug.utils import secure_filename
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import cloudinary
+import cloudinary.uploader
 
 app = Flask(__name__)
 
-DATABASE = "tiktok.db"
-UPLOAD_FOLDER = "uploads"
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+cloudinary.config(
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET")
+)
 
 
 def database():
-    connection = sqlite3.connect(DATABASE)
-    connection.row_factory = sqlite3.Row
-    return connection
+    return psycopg2.connect(
+        DATABASE_URL,
+        cursor_factory=RealDictCursor
+    )
 
 
 def create_database():
-
     db = database()
+    cursor = db.cursor()
 
-    db.execute("""
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             username TEXT UNIQUE,
             password TEXT
         )
     """)
 
-    db.execute("""
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS videos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             username TEXT,
             filename TEXT,
             caption TEXT,
@@ -39,9 +45,9 @@ def create_database():
         )
     """)
 
-    db.execute("""
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS comments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             video_id INTEGER,
             username TEXT,
             comment TEXT
@@ -49,6 +55,7 @@ def create_database():
     """)
 
     db.commit()
+    cursor.close()
     db.close()
 
 
@@ -59,7 +66,6 @@ def home():
 
 @app.route("/signup", methods=["POST"])
 def signup():
-
     data = request.get_json(silent=True) or {}
 
     username = data.get("username")
@@ -72,22 +78,23 @@ def signup():
         })
 
     db = database()
+    cursor = db.cursor()
 
     try:
-
-        db.execute(
+        cursor.execute(
             """
             INSERT INTO users
             (username, password)
-            VALUES (?, ?)
+            VALUES (%s, %s)
             """,
             (username, password)
         )
 
         db.commit()
 
-    except sqlite3.IntegrityError:
-
+    except psycopg2.IntegrityError:
+        db.rollback()
+        cursor.close()
         db.close()
 
         return jsonify({
@@ -95,6 +102,7 @@ def signup():
             "message": "Username already exists"
         })
 
+    cursor.close()
     db.close()
 
     return jsonify({
@@ -105,28 +113,30 @@ def signup():
 
 @app.route("/login", methods=["POST"])
 def login():
-
     data = request.get_json(silent=True) or {}
 
     username = data.get("username")
     password = data.get("password")
 
     db = database()
+    cursor = db.cursor()
 
-    user = db.execute(
+    cursor.execute(
         """
         SELECT *
         FROM users
-        WHERE username=?
-        AND password=?
+        WHERE username = %s
+        AND password = %s
         """,
         (username, password)
-    ).fetchone()
+    )
 
+    user = cursor.fetchone()
+
+    cursor.close()
     db.close()
 
     if user:
-
         return jsonify({
             "success": True,
             "username": username
@@ -140,7 +150,6 @@ def login():
 
 @app.route("/upload", methods=["POST"])
 def upload():
-
     username = request.form.get("username")
     caption = request.form.get("caption", "")
 
@@ -158,103 +167,114 @@ def upload():
             "message": "Invalid video"
         })
 
-    filename = secure_filename(video.filename)
+    try:
+        result = cloudinary.uploader.upload(
+            video,
+            resource_type="video",
+            folder="mytiktok/videos"
+        )
 
-    path = os.path.join(
-        UPLOAD_FOLDER,
-        filename
-    )
+        video_url = result["secure_url"]
 
-    video.save(path)
+    except Exception as error:
+        return jsonify({
+            "success": False,
+            "message": "Video upload failed",
+            "error": str(error)
+        }), 500
 
     db = database()
+    cursor = db.cursor()
 
-    db.execute(
+    cursor.execute(
         """
         INSERT INTO videos
         (username, filename, caption)
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
         """,
-        (username, filename, caption)
+        (username, video_url, caption)
     )
 
     db.commit()
+
+    cursor.close()
     db.close()
 
     return jsonify({
         "success": True,
-        "message": "Video uploaded"
+        "message": "Video uploaded",
+        "video": video_url
     })
 
 
 @app.route("/videos")
 def videos():
-
     db = database()
+    cursor = db.cursor()
 
-    rows = db.execute(
+    cursor.execute(
         """
         SELECT *
         FROM videos
         ORDER BY id DESC
         """
-    ).fetchall()
+    )
 
+    rows = cursor.fetchall()
+
+    cursor.close()
     db.close()
 
     result = []
 
     for row in rows:
+        video_url = row["filename"]
+
+        if not video_url.startswith("http"):
+            video_url = "/video/" + video_url
 
         result.append({
             "id": row["id"],
             "username": row["username"],
             "caption": row["caption"],
             "likes": row["likes"],
-            "video": "/video/" + row["filename"]
+            "video": video_url
         })
 
     return jsonify(result)
 
 
-@app.route("/video/<path:filename>")
-def video(filename):
-
-    return send_from_directory(
-        UPLOAD_FOLDER,
-        filename
-    )
-
-
 @app.route("/like/<int:video_id>", methods=["POST"])
 def like(video_id):
-
     db = database()
+    cursor = db.cursor()
 
-    db.execute(
+    cursor.execute(
         """
         UPDATE videos
         SET likes = likes + 1
-        WHERE id=?
+        WHERE id = %s
         """,
         (video_id,)
     )
 
     db.commit()
 
-    row = db.execute(
+    cursor.execute(
         """
         SELECT likes
         FROM videos
-        WHERE id=?
+        WHERE id = %s
         """,
         (video_id,)
-    ).fetchone()
+    )
 
+    row = cursor.fetchone()
+
+    cursor.close()
     db.close()
 
     if not row:
-
         return jsonify({
             "success": False,
             "message": "Video not found"
@@ -268,7 +288,6 @@ def like(video_id):
 
 @app.route("/comment", methods=["POST"])
 def comment():
-
     data = request.get_json(silent=True) or {}
 
     video_id = data.get("video_id")
@@ -276,24 +295,26 @@ def comment():
     comment_text = data.get("comment")
 
     if not video_id or not username or not comment_text:
-
         return jsonify({
             "success": False,
             "message": "Missing information"
         })
 
     db = database()
+    cursor = db.cursor()
 
-    db.execute(
+    cursor.execute(
         """
         INSERT INTO comments
         (video_id, username, comment)
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
         """,
         (video_id, username, comment_text)
     )
 
     db.commit()
+
+    cursor.close()
     db.close()
 
     return jsonify({
