@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -59,9 +59,10 @@ def create_database():
     db.close()
 
 
+# Serve the MyTikTok frontend
 @app.route("/")
 def home():
-    return "🔥 MyTikTok server is working!"
+    return send_from_directory(app.root_path, "index.html")
 
 
 @app.route("/signup", methods=["POST"])
