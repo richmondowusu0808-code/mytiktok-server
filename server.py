@@ -1,154 +1,38 @@
-cursor.execute(
-        """
-        INSERT INTO videos
-        (username, filename, caption)
-        VALUES (%s, %s, %s)
-        """,
-        (username, video_url, caption)
-    )
+import os
+import cloudinary
+import cloudinary.uploader
+from flask import Flask, request, jsonify
 
-    db.commit()
+app = Flask(__name__)
 
-    cursor.close()
-    db.close()
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True
+)
+
+@app.route("/")
+def home():
+    return "Server is running!"
+
+@app.route("/upload", methods=["POST"])
+def upload():
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    file = request.files["file"]
+
+    if file.filename == "":
+        return jsonify({"error": "No file selected"}), 400
+
+    result = cloudinary.uploader.upload(file)
 
     return jsonify({
-        "success": True,
-        "message": "Video uploaded",
-        "video": video_url
+        "url": result["secure_url"],
+        "public_id": result["public_id"]
     })
 
-
-@app.route("/videos", methods=["GET"])
-def videos():
-    db = database()
-    cursor = db.cursor()
-
-    try:
-        cursor.execute(
-            """
-            SELECT id, username, filename, caption, likes
-            FROM videos
-            ORDER BY id DESC
-            """
-        )
-
-        rows = cursor.fetchall()
-
-        result = []
-
-        for row in rows:
-            # This assumes database() uses RealDictCursor.
-            video_url = row["filename"]
-
-            if not video_url.startswith("http"):
-                video_url = "/video/" + video_url
-
-            result.append({
-                "id": row["id"],
-                "username": row["username"],
-                "caption": row["caption"],
-                "likes": row["likes"],
-                "video": video_url
-            })
-
-        return jsonify(result)
-
-    finally:
-        cursor.close()
-        db.close()
-
-
-@app.route("/like/<int:video_id>", methods=["POST"])
-def like(video_id):
-    db = database()
-    cursor = db.cursor()
-
-    try:
-        cursor.execute(
-            """
-            UPDATE videos
-            SET likes = likes + 1
-            WHERE id = %s
-            """,
-            (video_id,)
-        )
-
-        if cursor.rowcount == 0:
-            db.rollback()
-
-            return jsonify({
-                "success": False,
-                "message": "Video not found"
-            }), 404
-
-        db.commit()
-
-        cursor.execute(
-            """
-            SELECT likes
-            FROM videos
-            WHERE id = %s
-            """,
-            (video_id,)
-        )
-
-        row = cursor.fetchone()
-
-        return jsonify({
-            "success": True,
-            "likes": row["likes"]
-        })
-
-    finally:
-        cursor.close()
-        db.close()
-
-
-@app.route("/comment", methods=["POST"])
-def comment():
-    data = request.get_json(silent=True) or {}
-
-    video_id = data.get("video_id")
-    username = data.get("username")
-    comment_text = data.get("comment")
-
-    if not video_id or not username or not comment_text:
-        return jsonify({
-            "success": False,
-            "message": "Missing information"
-        }), 400
-
-    db = database()
-    cursor = db.cursor()
-
-    try:
-        cursor.execute(
-            """
-            INSERT INTO comments
-            (video_id, username, comment)
-            VALUES (%s, %s, %s)
-            """,
-            (video_id, username, comment_text)
-        )
-
-        db.commit()
-
-        return jsonify({
-            "success": True,
-            "message": "Comment added"
-        })
-
-    finally:
-        cursor.close()
-        db.close()
-
-
-# IMPORTANT:
-# Do NOT call create_database() here.
-#
-# create_database()
-#
-# Calling it while Gunicorn imports server.py can cause
-# the Render deployment to fail if the database connection
-# is unavailable during startup.
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
