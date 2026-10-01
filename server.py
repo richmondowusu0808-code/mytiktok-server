@@ -1,7 +1,7 @@
 import os
 import cloudinary
 import cloudinary.uploader
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
@@ -12,28 +12,17 @@ cloudinary.config(
     secure=True
 )
 
-HTML = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Upload to Cloudinary</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
-    <h2>Upload Image or Video</h2>
+@app.route("/")
+def home():
+    return """
+    <h1>Upload Server</h1>
+    <p>Server is working.</p>
 
     <form action="/upload" method="post" enctype="multipart/form-data">
         <input type="file" name="file" accept="image/*,video/*" required>
-        <br><br>
         <button type="submit">Upload</button>
     </form>
-</body>
-</html>
-"""
-
-@app.route("/")
-def home():
-    return render_template_string(HTML)
+    """
 
 @app.route("/upload", methods=["POST"])
 def upload():
