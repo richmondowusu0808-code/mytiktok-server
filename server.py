@@ -1,9 +1,50 @@
 import os
+import sqlite3
 import cloudinary
 import cloudinary.uploader
-from flask import Flask, request, render_template_string, redirect
+
+from flask import (
+    Flask,
+    request,
+    render_template_string,
+    redirect
+)
+
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
 
 app = Flask(__name__)
+
+
+# =========================
+# DATABASE
+# =========================
+
+def init_db():
+
+    conn = sqlite3.connect("app.db")
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            bio TEXT DEFAULT ''
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+init_db()
+
+
+# =========================
+# CLOUDINARY
+# =========================
 
 cloudinary.config(
     cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
@@ -12,13 +53,27 @@ cloudinary.config(
     secure=True
 )
 
+
+# =========================
+# TEMPORARY MEDIA
+# =========================
+
 media = []
+
+
+# =========================
+# TEMPORARY PROFILE
+# =========================
 
 profile = {
     "username": "user",
     "bio": "Welcome to my profile 🎬"
 }
 
+
+# =========================
+# FEED HTML
+# =========================
 
 HTML = """
 <!DOCTYPE html>
@@ -458,6 +513,10 @@ function sharePost(url) {
 """
 
 
+# =========================
+# PROFILE HTML
+# =========================
+
 PROFILE_HTML = """
 <!DOCTYPE html>
 <html>
@@ -666,6 +725,10 @@ Save Profile
 """
 
 
+# =========================
+# UPLOAD HTML
+# =========================
+
 UPLOAD_HTML = """
 <!DOCTYPE html>
 <html>
@@ -713,6 +776,10 @@ Upload
 </html>
 """
 
+
+# =========================
+# ROUTES
+# =========================
 
 @app.route("/")
 def home():
@@ -808,6 +875,10 @@ def upload():
         <p>{str(e)}</p>
         """, 500
 
+
+# =========================
+# START SERVER
+# =========================
 
 if __name__ == "__main__":
 
