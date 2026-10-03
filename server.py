@@ -80,6 +80,19 @@ def init_db():
         )
     """)
 
+    # COMMENTS TABLE
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            media_id INTEGER NOT NULL,
+            text TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (media_id) REFERENCES media(id)
+        )
+    """)
+
     conn.commit()
     conn.close()
 
