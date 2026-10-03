@@ -19,7 +19,8 @@ HTML = """
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>My Media</title>
+
+    <title>MyTikTok</title>
 
     <style>
         * {
@@ -76,6 +77,57 @@ HTML = """
             font-weight: bold;
         }
 
+        .side-buttons {
+            position: absolute;
+            right: 15px;
+            bottom: 120px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            align-items: center;
+        }
+
+        .action {
+            background: rgba(0, 0, 0, 0.45);
+            border: none;
+            color: white;
+            font-size: 30px;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .action-text {
+            font-size: 12px;
+            margin-top: -12px;
+        }
+
+        .liked {
+            color: red;
+        }
+
+        .info {
+            position: absolute;
+            left: 15px;
+            bottom: 35px;
+            right: 90px;
+            z-index: 10;
+            text-align: left;
+            text-shadow: 0 1px 4px black;
+        }
+
+        .username {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .caption {
+            font-size: 15px;
+        }
+
         .empty {
             height: 100vh;
             display: flex;
@@ -116,6 +168,52 @@ HTML = """
 
             {% endif %}
 
+            <div class="side-buttons">
+
+                <button
+                    class="action"
+                    onclick="likePost(this)">
+                    ❤️
+                </button>
+
+                <div class="action-text">
+                    <span>Like</span>
+                </div>
+
+                <button
+                    class="action"
+                    onclick="commentPost()">
+                    💬
+                </button>
+
+                <div class="action-text">
+                    <span>Comment</span>
+                </div>
+
+                <button
+                    class="action"
+                    onclick="sharePost('{{ item.url }}')">
+                    ↗️
+                </button>
+
+                <div class="action-text">
+                    <span>Share</span>
+                </div>
+
+            </div>
+
+            <div class="info">
+
+                <div class="username">
+                    @user
+                </div>
+
+                <div class="caption">
+                    My new video 🎬
+                </div>
+
+            </div>
+
         </div>
 
     {% endfor %}
@@ -133,6 +231,48 @@ HTML = """
 
 </div>
 
+<script>
+
+function likePost(button) {
+
+    button.classList.toggle("liked");
+
+}
+
+function commentPost() {
+
+    const comment = prompt("Write a comment:");
+
+    if (comment) {
+
+        alert("Comment added: " + comment);
+
+    }
+
+}
+
+function sharePost(url) {
+
+    if (navigator.share) {
+
+        navigator.share({
+            title: "MyTikTok",
+            text: "Check out this video!",
+            url: url
+        });
+
+    } else {
+
+        navigator.clipboard.writeText(url);
+
+        alert("Video link copied!");
+
+    }
+
+}
+
+</script>
+
 </body>
 </html>
 """
@@ -140,9 +280,13 @@ HTML = """
 UPLOAD_HTML = """
 <!DOCTYPE html>
 <html>
+
 <head>
+
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>Upload</title>
+
 </head>
 
 <body style="font-family:Arial;text-align:center;padding:30px">
@@ -160,21 +304,27 @@ UPLOAD_HTML = """
 
 <br><br>
 
-<button type="submit">Upload</button>
+<button type="submit">
+    Upload
+</button>
 
 </form>
 
 <br>
 
-<a href="/">← Back to Feed</a>
+<a href="/">
+    ← Back to Feed
+</a>
 
 </body>
+
 </html>
 """
 
 
 @app.route("/")
 def home():
+
     return render_template_string(
         HTML,
         media=media
@@ -185,14 +335,17 @@ def home():
 def upload():
 
     if request.method == "GET":
+
         return render_template_string(UPLOAD_HTML)
 
     if "file" not in request.files:
+
         return "No file selected", 400
 
     file = request.files["file"]
 
     if not file.filename:
+
         return "No file selected", 400
 
     try:
@@ -209,10 +362,17 @@ def upload():
 
         return """
         <html>
+
         <body style="font-family:Arial;text-align:center;padding:30px">
+
             <h2>✅ Upload successful!</h2>
-            <a href="/">🎬 View Feed</a>
+
+            <a href="/">
+                🎬 View Feed
+            </a>
+
         </body>
+
         </html>
         """
 
@@ -225,6 +385,7 @@ def upload():
 
 
 if __name__ == "__main__":
+
     port = int(os.environ.get("PORT", 5000))
 
     app.run(
