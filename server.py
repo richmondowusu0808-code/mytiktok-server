@@ -12,58 +12,126 @@ cloudinary.config(
     secure=True
 )
 
+# Temporary in-memory media list
+media = []
+
 HTML = """
 <!DOCTYPE html>
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Media Upload</title>
+    <title>My Media App</title>
 
     <style>
         body {
+            margin: 0;
+            background: #111;
+            color: white;
             font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 30px 20px;
+        }
+
+        header {
+            padding: 18px;
             text-align: center;
+            position: sticky;
+            top: 0;
+            background: #111;
+            z-index: 10;
         }
 
-        .box {
-            border: 2px dashed #999;
-            border-radius: 15px;
-            padding: 30px 20px;
-        }
-
-        input {
-            width: 100%;
-            margin: 20px 0;
-        }
-
-        button {
-            padding: 12px 25px;
-            border: 0;
+        .upload {
+            display: block;
+            width: fit-content;
+            margin: 10px auto 20px;
+            padding: 12px 20px;
+            background: white;
+            color: black;
+            text-decoration: none;
             border-radius: 8px;
-            cursor: pointer;
         }
 
-        img, video {
-            max-width: 100%;
-            margin-top: 20px;
-            border-radius: 10px;
+        .feed {
+            max-width: 600px;
+            margin: auto;
         }
 
-        .url {
-            word-break: break-all;
-            margin-top: 20px;
+        .post {
+            margin-bottom: 25px;
+            background: #000;
+        }
+
+        video, img {
+            width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+            display: block;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 50px 20px;
+            color: #aaa;
         }
     </style>
 </head>
 
 <body>
 
-<h1>📤 Media Upload</h1>
+<header>
+    <h2>🎬 My Media Feed</h2>
+    <a class="upload" href="/upload">📤 Upload</a>
+</header>
 
-<div class="box">
+<div class="feed">
+
+{% if media %}
+
+    {% for item in media %}
+
+        <div class="post">
+
+        {% if item.type == "video" %}
+
+            <video controls playsinline preload="metadata">
+                <source src="{{ item.url }}">
+            </video>
+
+        {% else %}
+
+            <img src="{{ item.url }}" alt="Uploaded image">
+
+        {% endif %}
+
+        </div>
+
+    {% endfor %}
+
+{% else %}
+
+    <div class="empty">
+        <h3>No uploads yet</h3>
+        <p>Upload your first image or video.</p>
+    </div>
+
+{% endif %}
+
+</div>
+
+</body>
+</html>
+"""
+
+UPLOAD_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Upload</title>
+</head>
+
+<body style="font-family:Arial;text-align:center;padding:30px">
+
+<h1>📤 Upload</h1>
 
 <form action="/upload" method="post" enctype="multipart/form-data">
 
@@ -74,22 +142,34 @@ HTML = """
     required
 >
 
+<br><br>
+
 <button type="submit">Upload</button>
 
 </form>
 
-</div>
+<br>
+
+<a href="/">← Back to Feed</a>
 
 </body>
 </html>
 """
 
+
 @app.route("/")
 def home():
-    return render_template_string(HTML)
+    return render_template_string(
+        HTML,
+        media=media
+    )
 
-@app.route("/upload", methods=["POST"])
+
+@app.route("/upload", methods=["GET", "POST"])
 def upload():
+
+    if request.method == "GET":
+        return render_template_string(UPLOAD_HTML)
 
     if "file" not in request.files:
         return "No file selected", 400
@@ -106,38 +186,16 @@ def upload():
             resource_type="auto"
         )
 
-        url = result["secure_url"]
-        resource_type = result["resource_type"]
+        media.insert(0, {
+            "url": result["secure_url"],
+            "type": result["resource_type"]
+        })
 
-        if resource_type == "video":
-            preview = f'<video controls src="{url}"></video>'
-        else:
-            preview = f'<img src="{url}" alt="Uploaded image">'
-
-        return f"""
+        return """
         <html>
-        <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Upload Successful</title>
-        </head>
-
         <body style="font-family:Arial;text-align:center;padding:30px">
-
-            <h1>✅ Upload Successful!</h1>
-
-            <p><b>File:</b> {file.filename}</p>
-
-            {preview}
-
-            <div class="url">
-                <p><b>Cloudinary URL:</b></p>
-                <a href="{url}" target="_blank">{url}</a>
-            </div>
-
-            <br>
-
-            <a href="/">Upload another file</a>
-
+            <h2>✅ Upload successful!</h2>
+            <a href="/">🎬 View Feed</a>
         </body>
         </html>
         """
@@ -151,5 +209,10 @@ def upload():
 
 
 if __name__ == "__main__":
+
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+
+    app.run(
+        host="0.0.0.0",
+        port=port
+    )
