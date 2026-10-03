@@ -67,6 +67,19 @@ def init_db():
         )
     """)
 
+    # LIKES TABLE
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS likes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            media_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, media_id),
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (media_id) REFERENCES media(id)
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -732,6 +745,7 @@ function sharePost(url) {
         alert("Video link copied!");
 
     }
+
 }
 
 </script>
