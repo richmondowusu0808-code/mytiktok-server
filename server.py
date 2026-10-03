@@ -1,7 +1,7 @@
 import os
 import cloudinary
 import cloudinary.uploader
-from flask import Flask, request, render_template_string
+from flask import Flask, request, render_template_string, redirect
 
 app = Flask(__name__)
 
@@ -13,6 +13,12 @@ cloudinary.config(
 )
 
 media = []
+
+profile = {
+    "username": "user",
+    "bio": "Welcome to my profile 🎬"
+}
+
 
 HTML = """
 <!DOCTYPE html>
@@ -188,62 +194,6 @@ video, img {
     text-align: center;
 }
 
-.profile {
-    min-height: 100vh;
-    background: #111;
-    text-align: center;
-    padding: 40px 20px;
-}
-
-.avatar {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background: #333;
-    margin: 30px auto 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 50px;
-}
-
-.profile-name {
-    font-size: 24px;
-    font-weight: bold;
-}
-
-.bio {
-    color: #ccc;
-    margin: 10px 0 25px;
-}
-
-.stats {
-    display: flex;
-    justify-content: center;
-    gap: 35px;
-    margin-bottom: 30px;
-}
-
-.stat-number {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.stat-label {
-    color: #aaa;
-    font-size: 13px;
-}
-
-.back {
-    display: inline-block;
-    padding: 10px 20px;
-    background: white;
-    color: black;
-    text-decoration: none;
-    border-radius: 20px;
-    font-weight: bold;
-}
-
 </style>
 
 </head>
@@ -336,7 +286,7 @@ Share
 <div class="info">
 
 <div class="username">
-@user
+@{{ profile.username }}
 </div>
 
 <div class="caption">
@@ -470,7 +420,7 @@ function sendComment(button) {
     comment.className = "comment-item";
 
     comment.innerText =
-        "@user: " + text;
+        "@{{ profile.username }}: " + text;
 
     list.appendChild(comment);
 
@@ -530,7 +480,7 @@ body {
 }
 
 .profile {
-    padding: 40px 20px;
+    padding: 35px 20px;
 }
 
 .avatar {
@@ -583,6 +533,38 @@ body {
     font-weight: bold;
 }
 
+.edit {
+    max-width: 400px;
+    margin: 30px auto;
+    padding: 20px;
+    background: #222;
+    border-radius: 15px;
+}
+
+.input {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0 15px;
+    border: none;
+    border-radius: 10px;
+}
+
+textarea.input {
+    height: 90px;
+    resize: none;
+}
+
+.save {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 20px;
+    background: white;
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+}
+
 </style>
 
 </head>
@@ -596,12 +578,13 @@ body {
 </div>
 
 <div class="name">
-@user
+@{{ profile.username }}
 </div>
 
 <div class="bio">
-Welcome to my profile 🎬
+{{ profile.bio }}
 </div>
+
 
 <div class="stats">
 
@@ -621,6 +604,51 @@ Welcome to my profile 🎬
 </div>
 
 </div>
+
+
+<div class="edit">
+
+<h2>✏️ Edit Profile</h2>
+
+<form action="/profile" method="post">
+
+<label>
+Username
+</label>
+
+<input
+class="input"
+type="text"
+name="username"
+value="{{ profile.username }}"
+maxlength="30"
+required>
+
+
+<label>
+Bio
+</label>
+
+<textarea
+class="input"
+name="bio"
+maxlength="150"
+placeholder="Tell people about yourself..."
+>{{ profile.bio }}</textarea>
+
+
+<button
+class="save"
+type="submit">
+
+Save Profile
+
+</button>
+
+</form>
+
+</div>
+
 
 <a class="button" href="/">
 🎬 Feed
@@ -691,15 +719,37 @@ def home():
 
     return render_template_string(
         HTML,
-        media=media
+        media=media,
+        profile=profile
     )
 
 
-@app.route("/profile")
-def profile():
+@app.route("/profile", methods=["GET", "POST"])
+def profile_page():
+
+    if request.method == "POST":
+
+        username = request.form.get(
+            "username",
+            "user"
+        ).strip()
+
+        bio = request.form.get(
+            "bio",
+            ""
+        ).strip()
+
+        if username:
+
+            profile["username"] = username
+
+        profile["bio"] = bio
+
+        return redirect("/profile")
 
     return render_template_string(
-        PROFILE_HTML
+        PROFILE_HTML,
+        profile=profile
     )
 
 
