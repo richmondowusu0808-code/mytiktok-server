@@ -45,7 +45,10 @@ def init_db():
 
     conn = get_db()
 
+    # =========================
     # USERS TABLE
+    # =========================
+
     conn.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +58,10 @@ def init_db():
         )
     """)
 
+    # =========================
     # MEDIA TABLE
+    # =========================
+
     conn.execute("""
         CREATE TABLE IF NOT EXISTS media (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,7 +73,10 @@ def init_db():
         )
     """)
 
+    # =========================
     # LIKES TABLE
+    # =========================
+
     conn.execute("""
         CREATE TABLE IF NOT EXISTS likes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,7 +89,26 @@ def init_db():
         )
     """)
 
+    # =========================
+    # FOLLOWERS TABLE
+    # =========================
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS followers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            follower_id INTEGER NOT NULL,
+            following_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(follower_id, following_id),
+            FOREIGN KEY (follower_id) REFERENCES users(id),
+            FOREIGN KEY (following_id) REFERENCES users(id)
+        )
+    """)
+
+    # =========================
     # COMMENTS TABLE
+    # =========================
+
     conn.execute("""
         CREATE TABLE IF NOT EXISTS comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -94,6 +122,7 @@ def init_db():
     """)
 
     conn.commit()
+
     conn.close()
 
 
@@ -107,23 +136,24 @@ init_db()
 cloudinary.config(
     cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
     api_key=os.environ.get("CLOUDINARY_API_KEY"),
-    api_secret=os.environ.get("CLOUDINARY_API_SECRET"),
-    secure=True
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET")
 )
 
 
 # =========================
-# PROFILE HTML
+# PROFILE PAGE
 # =========================
 
 PROFILE_HTML = """
+
 <!DOCTYPE html>
+
 <html>
 
 <head>
 
 <meta name="viewport"
-content="width=device-width, initial-scale=1">
+      content="width=device-width, initial-scale=1">
 
 <title>Profile</title>
 
@@ -131,97 +161,60 @@ content="width=device-width, initial-scale=1">
 
 body {
     margin: 0;
-    background: #111;
-    color: white;
+    background: #000;
+    color: #fff;
     font-family: Arial, sans-serif;
-    text-align: center;
 }
 
 .profile {
-    padding: 35px 20px;
+    padding: 30px 20px;
+    text-align: center;
 }
 
-.avatar {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background: #333;
-    margin: 30px auto 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 50px;
-}
-
-.name {
-    font-size: 25px;
+.username {
+    font-size: 28px;
     font-weight: bold;
+    margin-bottom: 10px;
 }
 
 .bio {
     color: #ccc;
-    margin: 10px 0 25px;
+    margin-bottom: 25px;
 }
 
 .stats {
     display: flex;
     justify-content: center;
-    gap: 35px;
+    gap: 40px;
     margin-bottom: 30px;
 }
 
-.number {
-    font-size: 20px;
+.stat {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 22px;
     font-weight: bold;
 }
 
-.label {
+.stat-label {
     color: #aaa;
-    font-size: 13px;
+    font-size: 14px;
 }
 
-.button {
-    display: inline-block;
-    padding: 12px 22px;
-    margin: 5px;
-    background: white;
-    color: black;
+button {
+    background: #ff0050;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+a {
+    color: white;
     text-decoration: none;
-    border-radius: 22px;
-    font-weight: bold;
-}
-
-.edit {
-    max-width: 400px;
-    margin: 30px auto;
-    padding: 20px;
-    background: #222;
-    border-radius: 15px;
-}
-
-.input {
-    width: 100%;
-    padding: 12px;
-    margin: 8px 0 15px;
-    border: none;
-    border-radius: 10px;
-    box-sizing: border-box;
-}
-
-textarea.input {
-    height: 90px;
-    resize: none;
-}
-
-.save {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 20px;
-    background: white;
-    color: black;
-    font-weight: bold;
-    cursor: pointer;
 }
 
 </style>
@@ -232,95 +225,66 @@ textarea.input {
 
 <div class="profile">
 
-<div class="avatar">
-👤
-</div>
+    <div class="username">
+        {{ user["username"] }}
+    </div>
 
-<div class="name">
-@{{ profile.username }}
-</div>
+    <div class="bio">
+        {{ user["bio"] }}
+    </div>
 
-<div class="bio">
-{{ profile.bio }}
-</div>
+    <div class="stats">
 
-<div class="stats">
+        <div class="stat">
 
-<div>
-<div class="number">0</div>
-<div class="label">Following</div>
-</div>
+            <div class="stat-number">
+                0
+            </div>
 
-<div>
-<div class="number">0</div>
-<div class="label">Followers</div>
-</div>
+            <div class="stat-label">
+                Following
+            </div>
 
-<div>
-<div class="number">{{ post_count }}</div>
-<div class="label">Posts</div>
-</div>
+        </div>
 
-</div>
 
-<div class="edit">
+        <div class="stat">
 
-<h2>✏️ Edit Profile</h2>
+            <div class="stat-number">
+                0
+            </div>
 
-<form action="/profile" method="post">
+            <div class="stat-label">
+                Followers
+            </div>
 
-<label>
-Username
-</label>
+        </div>
 
-<input
-class="input"
-type="text"
-name="username"
-value="{{ profile.username }}"
-maxlength="30"
-required>
 
-<label>
-Bio
-</label>
+        <div class="stat">
 
-<textarea
-class="input"
-name="bio"
-maxlength="150"
-placeholder="Tell people about yourself..."
->{{ profile.bio }}</textarea>
+            <div class="stat-number">
+                {{ post_count }}
+            </div>
 
-<button
-class="save"
-type="submit">
+            <div class="stat-label">
+                Posts
+            </div>
 
-Save Profile
+        </div>
 
-</button>
+    </div>
 
-</form>
-
-</div>
-
-<a class="button" href="/">
-🎬 Feed
-</a>
-
-<a class="button" href="/upload">
-📤 Upload
-</a>
-
-<a class="button" href="/logout">
-🚪 Logout
-</a>
+    <a href="/">
+        <button>Back to Feed</button>
+    </a>
 
 </div>
 
 </body>
 
 </html>
+
 """
 
 
@@ -329,13 +293,15 @@ Save Profile
 # =========================
 
 HTML = """
+
 <!DOCTYPE html>
+
 <html>
 
 <head>
 
 <meta name="viewport"
-content="width=device-width, initial-scale=1">
+      content="width=device-width, initial-scale=1">
 
 <title>MyTikTok</title>
 
@@ -345,12 +311,12 @@ content="width=device-width, initial-scale=1">
     box-sizing: border-box;
 }
 
-html, body {
+body {
     margin: 0;
-    padding: 0;
-    background: black;
-    color: white;
+    background: #000;
+    color: #fff;
     font-family: Arial, sans-serif;
+    overflow: hidden;
 }
 
 .feed {
@@ -359,161 +325,118 @@ html, body {
     scroll-snap-type: y mandatory;
 }
 
-.post {
+.video {
     height: 100vh;
-    width: 100%;
     position: relative;
     scroll-snap-align: start;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: black;
+    background: #000;
 }
 
-video, img {
+.video video,
+.video img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
 }
 
-.top {
-    position: fixed;
-    top: 15px;
-    left: 0;
-    right: 0;
-    z-index: 20;
-    text-align: center;
-}
-
-.nav-button {
-    display: inline-block;
-    padding: 10px 16px;
-    margin: 3px;
-    background: white;
-    color: black;
-    text-decoration: none;
-    border-radius: 20px;
-    font-weight: bold;
-}
-
-.side-buttons {
+.overlay {
     position: absolute;
-    right: 15px;
-    bottom: 120px;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    align-items: center;
-}
-
-.action {
-    background: rgba(0, 0, 0, 0.45);
-    border: none;
-    color: white;
-    font-size: 30px;
-    width: 55px;
-    height: 55px;
-    border-radius: 50%;
-    cursor: pointer;
-}
-
-.liked {
-    color: red;
-}
-
-.count {
-    font-size: 14px;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.info {
-    position: absolute;
+    bottom: 25px;
     left: 15px;
-    bottom: 35px;
-    right: 90px;
-    z-index: 10;
-    text-align: left;
-    text-shadow: 0 1px 4px black;
+    right: 15px;
 }
 
 .username {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: bold;
-    margin-bottom: 8px;
+    margin-bottom: 15px;
 }
 
-.caption {
-    font-size: 15px;
-}
-
-.comments-box {
-    display: none;
+.actions {
     position: absolute;
-    left: 10px;
     right: 10px;
-    bottom: 10px;
-    background: white;
-    color: black;
-    padding: 15px;
-    border-radius: 15px;
-    z-index: 30;
+    bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
-.comments-list {
-    max-height: 180px;
+.action-btn {
+    border: none;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    font-size: 22px;
+}
+
+.count {
+    text-align: center;
+    font-size: 13px;
+    margin-top: -10px;
+}
+
+.comment-box {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: -100%;
+    height: 55%;
+    background: #111;
+    z-index: 100;
+    transition: bottom 0.3s;
+    padding: 20px;
     overflow-y: auto;
-    margin-bottom: 10px;
 }
 
-.comment-item {
-    padding: 8px 0;
-    border-bottom: 1px solid #ddd;
+.comment-box.open {
+    bottom: 0;
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 20px;
+    margin-bottom: 20px;
+}
+
+.comment {
+    padding: 10px 0;
+    border-bottom: 1px solid #333;
 }
 
 .comment-user {
     font-weight: bold;
-    margin-right: 5px;
 }
 
 .comment-text {
-    word-break: break-word;
+    color: #ddd;
+    margin-top: 4px;
 }
 
 .comment-input {
-    width: 75%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 20px;
-}
-
-.comment-send {
-    width: 20%;
-    padding: 10px;
-    border: none;
-    border-radius: 20px;
-    background: black;
-    color: white;
-}
-
-.comment-send:disabled {
-    opacity: 0.5;
-}
-
-.close-comments {
-    float: right;
-    border: none;
-    background: none;
-    font-size: 20px;
-}
-
-.empty {
-    height: 100vh;
+    position: fixed;
+    bottom: 10px;
+    left: 15px;
+    right: 15px;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+    gap: 10px;
+}
+
+.comment-input input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 20px;
+    border: none;
+}
+
+.comment-input button {
+    border: none;
+    background: #ff0050;
+    color: white;
+    border-radius: 20px;
+    padding: 0 18px;
 }
 
 </style>
@@ -522,136 +445,74 @@ video, img {
 
 <body>
 
-<div class="top">
-
-<a class="nav-button" href="/">
-🎬 Feed
-</a>
-
-<a class="nav-button" href="/upload">
-📤 Upload
-</a>
-
-<a class="nav-button" href="/profile">
-👤 Profile
-</a>
-
-<a class="nav-button" href="/login">
-🔐 Login
-</a>
-
-<a class="nav-button" href="/signup">
-📝 Sign Up
-</a>
-
-</div>
 
 <div class="feed">
 
-{% if media %}
-
 {% for item in media %}
 
-<div
-class="post"
-data-media-id="{{ item.id }}">
+<div class="video">
 
-{% if item.media_type == "video" %}
+{% if item["media_type"] == "video" %}
 
 <video
-controls
-playsinline
-loop
-preload="metadata">
-
-<source src="{{ item.url }}">
-
+    src="{{ item["url"] }}"
+    autoplay
+    muted
+    loop
+    playsinline>
 </video>
 
 {% else %}
 
-<img
-src="{{ item.url }}"
-alt="Uploaded image">
+<img src="{{ item["url"] }}">
 
 {% endif %}
 
-<div class="side-buttons">
 
-<button
-class="action {% if item.user_liked %}liked{% endif %}"
-onclick="likePost(this)"
-type="button">
-❤️
-</button>
-
-<div class="count">
-{{ item.like_count }}
-</div>
-
-<button
-class="action"
-onclick="openComments(this)"
-type="button">
-💬
-</button>
-
-<div class="count comment-count">
-{{ item.comment_count }}
-</div>
-
-<button
-class="action"
-onclick="sharePost('{{ item.url }}')"
-type="button">
-↗️
-</button>
-
-<div class="count">
-Share
-</div>
-
-</div>
-
-<div class="info">
+<div class="overlay">
 
 <div class="username">
-@{{ item.username }}
-</div>
-
-<div class="caption">
-My new video 🎬
+    @{{ item["username"] }}
 </div>
 
 </div>
 
-<div class="comments-box">
+
+<div class="actions">
 
 <button
-class="close-comments"
-onclick="closeComments(this)"
-type="button">
-✕
+    class="action-btn"
+    onclick="toggleLike(
+        {{ item["id"] }},
+        this
+    )">
+
+    {% if item["user_liked"] %}
+        ❤️
+    {% else %}
+        🤍
+    {% endif %}
+
 </button>
 
-<h3>Comments</h3>
-
-<div class="comments-list">
+<div class="count">
+    {{ item["like_count"] }}
 </div>
 
-<input
-class="comment-input"
-type="text"
-maxlength="500"
-placeholder="Write a comment..."
-onkeydown="commentKeyDown(event, this)">
 
 <button
-class="comment-send"
-onclick="sendComment(this)"
-type="button">
-Send
+    class="action-btn"
+    onclick="openComments(
+        {{ item["id"] }}
+    )">
+
+    💬
+
 </button>
+
+<div class="count">
+    {{ item["comment_count"] }}
+</div>
 
 </div>
 
@@ -659,404 +520,290 @@ Send
 
 {% endfor %}
 
-{% else %}
+</div>
 
-<div class="empty">
 
-<div>
+<div
+    id="commentBox"
+    class="comment-box">
 
-<h2>🎬 No videos yet</h2>
+<div class="comment-header">
 
-<p>
-Tap Upload to add your first video.
-</p>
+<span>
+    Comments
+</span>
+
+<button
+    onclick="closeComments()">
+
+    ✕
+
+</button>
+
+</div>
+
+
+<div id="commentsList"></div>
+
+
+<div class="comment-input">
+
+<input
+    id="commentInput"
+    type="text"
+    maxlength="500"
+    placeholder="Add a comment...">
+
+<button
+    onclick="sendComment()">
+
+    Send
+
+</button>
 
 </div>
 
 </div>
 
-{% endif %}
-
-</div>
 
 <script>
 
-async function likePost(button) {
+let currentMediaId = null;
 
-    const post = button.closest(".post");
 
-    const mediaId = post.dataset.mediaId;
+async function toggleLike(mediaId, button) {
 
-    const count = button.nextElementSibling;
+    const response = await fetch(
+        "/like/" + mediaId,
+        {
+            method: "POST"
+        }
+    );
 
-    button.disabled = true;
+    if (!response.ok) {
+        return;
+    }
 
-    try {
+    const data = await response.json();
 
-        const response = await fetch(
-            "/like/" + mediaId,
-            {
-                method: "POST"
-            }
+    button.innerText =
+        data.liked ? "❤️" : "🤍";
+
+    const countElement =
+        button.nextElementSibling;
+
+    countElement.innerText =
+        data.like_count;
+}
+
+
+function openComments(mediaId) {
+
+    currentMediaId = mediaId;
+
+    document
+        .getElementById("commentBox")
+        .classList
+        .add("open");
+
+    loadComments(mediaId);
+}
+
+
+function closeComments() {
+
+    document
+        .getElementById("commentBox")
+        .classList
+        .remove("open");
+
+    currentMediaId = null;
+}
+
+
+async function loadComments(mediaId) {
+
+    const response = await fetch(
+        "/comments/" + mediaId
+    );
+
+    if (!response.ok) {
+        return;
+    }
+
+    const comments =
+        await response.json();
+
+    const list =
+        document.getElementById(
+            "commentsList"
         );
 
-        const data = await response.json();
+    list.innerHTML = "";
 
-        if (!response.ok) {
+    comments.forEach(
+        function(comment) {
 
-            alert(
-                data.error ||
-                "Unable to like this post."
+            addCommentToList(
+                comment.username,
+                comment.text
             );
 
-            button.disabled = false;
-
-            return;
         }
-
-        count.innerText = data.count;
-
-        if (data.liked) {
-
-            button.classList.add("liked");
-
-        } else {
-
-            button.classList.remove("liked");
-
-        }
-
-    } catch (error) {
-
-        alert(
-            "Something went wrong. Please try again."
-        );
-
-    }
-
-    button.disabled = false;
+    );
 }
 
 
-async function openComments(button) {
-
-    const post = button.closest(".post");
-
-    const box =
-        post.querySelector(".comments-box");
-
-    box.style.display = "block";
-
-    await loadComments(post);
-}
-
-
-function closeComments(button) {
-
-    const box =
-        button.closest(".comments-box");
-
-    box.style.display = "none";
-}
-
-
-async function loadComments(post) {
-
-    const mediaId =
-        post.dataset.mediaId;
-
-    const box =
-        post.querySelector(".comments-box");
+function addCommentToList(
+    username,
+    text
+) {
 
     const list =
-        box.querySelector(".comments-list");
-
-    try {
-
-        const response = await fetch(
-            "/comments/" + mediaId
+        document.getElementById(
+            "commentsList"
         );
 
-        const data =
-            await response.json();
+    const div =
+        document.createElement("div");
 
-        if (!response.ok) {
+    div.className = "comment";
 
-            return;
-        }
+    div.innerHTML = `
 
-        list.innerHTML = "";
+        <div class="comment-user">
+            @${username}
+        </div>
 
-        data.comments.forEach(
-            function(comment) {
+        <div class="comment-text">
+            ${text}
+        </div>
 
-                addCommentToList(
-                    list,
-                    comment.username,
-                    comment.text
-                );
+    `;
 
-            }
-        );
-
-        const count =
-            post.querySelector(".comment-count");
-
-        count.innerText =
-            data.comments.length;
-
-    } catch (error) {
-
-        console.log(
-            "Unable to load comments.",
-            error
-        );
-
-    }
+    list.appendChild(div);
 }
 
 
-async function sendComment(button) {
-
-    const box =
-        button.closest(".comments-box");
+async function sendComment() {
 
     const input =
-        box.querySelector(".comment-input");
-
-    const post =
-        button.closest(".post");
-
-    const list =
-        box.querySelector(".comments-list");
-
-    const count =
-        post.querySelector(".comment-count");
+        document.getElementById(
+            "commentInput"
+        );
 
     const text =
         input.value.trim();
 
     if (!text) {
-
         return;
     }
 
-    const mediaId =
-        post.dataset.mediaId;
+    if (!currentMediaId) {
+        return;
+    }
 
-    button.disabled = true;
-
-    try {
-
-        const response = await fetch(
-            "/comment/" + mediaId,
+    const response =
+        await fetch(
+            "/comment/" + currentMediaId,
             {
                 method: "POST",
+
                 headers: {
                     "Content-Type":
                         "application/json"
                 },
+
                 body: JSON.stringify({
                     text: text
                 })
             }
         );
 
-        const data =
-            await response.json();
+    if (!response.ok) {
+        return;
+    }
 
-        if (!response.ok) {
+    const data =
+        await response.json();
 
-            alert(
-                data.error ||
-                "Unable to add comment."
-            );
+    addCommentToList(
+        data.username,
+        data.text
+    );
 
-            button.disabled = false;
+    input.value = "";
+}
 
-            return;
+
+document
+    .getElementById("commentInput")
+    .addEventListener(
+        "keydown",
+        function(event) {
+
+            if (event.key === "Enter") {
+
+                event.preventDefault();
+
+                sendComment();
+
+            }
+
         }
-
-        addCommentToList(
-            list,
-            data.username,
-            data.text
-        );
-
-        input.value = "";
-
-        count.innerText =
-            list.children.length;
-
-    } catch (error) {
-
-        alert(
-            "Something went wrong. Please try again."
-        );
-
-    }
-
-    button.disabled = false;
-}
-
-
-function addCommentToList(
-    list,
-    username,
-    text
-) {
-
-    const comment =
-        document.createElement("div");
-
-    comment.className =
-        "comment-item";
-
-    const user =
-        document.createElement("span");
-
-    user.className =
-        "comment-user";
-
-    user.innerText =
-        "@" + username;
-
-    const message =
-        document.createElement("span");
-
-    message.className =
-        "comment-text";
-
-    message.innerText =
-        text;
-
-    comment.appendChild(user);
-
-    comment.appendChild(message);
-
-    list.appendChild(comment);
-}
-
-
-function commentKeyDown(
-    event,
-    input
-) {
-
-    if (
-        event.key === "Enter"
-        && !event.shiftKey
-    ) {
-
-        event.preventDefault();
-
-        const box =
-            input.closest(".comments-box");
-
-        const button =
-            box.querySelector(".comment-send");
-
-        sendComment(button);
-    }
-}
-
-
-function sharePost(url) {
-
-    if (navigator.share) {
-
-        navigator.share({
-            title: "MyTikTok",
-            text: "Check out this video!",
-            url: url
-        });
-
-    } else {
-
-        navigator.clipboard.writeText(url);
-
-        alert("Video link copied!");
-
-    }
-
-}
+    );
 
 </script>
 
 </body>
 
 </html>
+
 """
 
 
 # =========================
-# SIGN UP HTML
+# SIGNUP HTML
 # =========================
 
 SIGNUP_HTML = """
+
 <!DOCTYPE html>
+
 <html>
 
 <head>
 
 <meta name="viewport"
-content="width=device-width, initial-scale=1">
+      content="width=device-width, initial-scale=1">
 
-<title>Sign Up - MyTikTok</title>
+<title>Sign Up</title>
 
 <style>
 
 body {
-    margin: 0;
-    background: #111;
+    background: #000;
     color: white;
-    font-family: Arial, sans-serif;
+    font-family: Arial;
+    padding: 30px;
 }
 
-.container {
-    max-width: 400px;
-    margin: 60px auto;
-    padding: 25px;
-}
-
-h1 {
-    text-align: center;
-}
-
-.input {
+input {
+    display: block;
     width: 100%;
-    padding: 14px;
-    margin: 8px 0 15px;
-    border: none;
-    border-radius: 10px;
-    box-sizing: border-box;
-}
-
-.button {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 25px;
-    background: white;
-    color: black;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.error {
-    background: #500;
     padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 15px;
-    text-align: center;
+    margin: 10px 0;
 }
 
-.login {
-    text-align: center;
-    margin-top: 20px;
+button {
+    width: 100%;
+    padding: 12px;
+    background: #ff0050;
+    color: white;
+    border: none;
 }
 
-.login a {
+a {
     color: white;
 }
 
@@ -1066,70 +813,36 @@ h1 {
 
 <body>
 
-<div class="container">
+<h1>Create Account</h1>
 
-<h1>🎬 Create Account</h1>
-
-{% if error %}
-
-<div class="error">
-{{ error }}
-</div>
-
-{% endif %}
-
-<form action="/signup" method="post">
-
-<label>
-Username
-</label>
+<form method="POST">
 
 <input
-class="input"
-type="text"
-name="username"
-maxlength="30"
-required>
-
-<label>
-Password
-</label>
+    name="username"
+    placeholder="Username"
+    required>
 
 <input
-class="input"
-type="password"
-name="password"
-required>
+    name="password"
+    type="password"
+    placeholder="Password"
+    required>
 
-<button
-class="button"
-type="submit">
-
-Create Account
-
+<button type="submit">
+    Sign Up
 </button>
 
 </form>
 
-<div class="login">
-
-<a href="/login">
-Already have an account? Login
-</a>
-
-<br><br>
-
-<a href="/">
-← Back to Feed
-</a>
-
-</div>
-
-</div>
+<p>
+Already have an account?
+<a href="/login">Login</a>
+</p>
 
 </body>
 
 </html>
+
 """
 
 
@@ -1138,69 +851,43 @@ Already have an account? Login
 # =========================
 
 LOGIN_HTML = """
+
 <!DOCTYPE html>
+
 <html>
 
 <head>
 
 <meta name="viewport"
-content="width=device-width, initial-scale=1">
+      content="width=device-width, initial-scale=1">
 
-<title>Login - MyTikTok</title>
+<title>Login</title>
 
 <style>
 
 body {
-    margin: 0;
-    background: #111;
+    background: #000;
     color: white;
-    font-family: Arial, sans-serif;
+    font-family: Arial;
+    padding: 30px;
 }
 
-.container {
-    max-width: 400px;
-    margin: 60px auto;
-    padding: 25px;
-}
-
-h1 {
-    text-align: center;
-}
-
-.input {
+input {
+    display: block;
     width: 100%;
-    padding: 14px;
-    margin: 8px 0 15px;
-    border: none;
-    border-radius: 10px;
-    box-sizing: border-box;
-}
-
-.button {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 25px;
-    background: white;
-    color: black;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.error {
-    background: #500;
     padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 15px;
-    text-align: center;
+    margin: 10px 0;
 }
 
-.signup {
-    text-align: center;
-    margin-top: 20px;
+button {
+    width: 100%;
+    padding: 12px;
+    background: #ff0050;
+    color: white;
+    border: none;
 }
 
-.signup a {
+a {
     color: white;
 }
 
@@ -1210,135 +897,49 @@ h1 {
 
 <body>
 
-<div class="container">
+<h1>Login</h1>
 
-<h1>🔐 Login</h1>
-
-{% if error %}
-
-<div class="error">
-{{ error }}
-</div>
-
-{% endif %}
-
-<form action="/login" method="post">
-
-<label>
-Username
-</label>
+<form method="POST">
 
 <input
-class="input"
-type="text"
-name="username"
-required>
-
-<label>
-Password
-</label>
+    name="username"
+    placeholder="Username"
+    required>
 
 <input
-class="input"
-type="password"
-name="password"
-required>
-
-<button
-class="button"
-type="submit">
-
-Login
-
-</button>
-
-</form>
-
-<div class="signup">
-
-<a href="/signup">
-Create a new account
-</a>
-
-<br><br>
-
-<a href="/">
-← Back to Feed
-</a>
-
-</div>
-
-</div>
-
-</body>
-
-</html>
-"""
-
-
-# =========================
-# UPLOAD HTML
-# =========================
-
-UPLOAD_HTML = """
-<!DOCTYPE html>
-<html>
-
-<head>
-
-<meta name="viewport"
-content="width=device-width, initial-scale=1">
-
-<title>Upload</title>
-
-</head>
-
-<body
-style="font-family:Arial;text-align:center;padding:30px">
-
-<h1>📤 Upload</h1>
-
-<form
-action="/upload"
-method="post"
-enctype="multipart/form-data">
-
-<input
-type="file"
-name="file"
-accept="image/*,video/*"
-required>
-
-<br><br>
+    name="password"
+    type="password"
+    placeholder="Password"
+    required>
 
 <button type="submit">
-Upload
+    Login
 </button>
 
 </form>
 
-<br>
-
-<a href="/">
-← Back to Feed
-</a>
+<p>
+Don't have an account?
+<a href="/signup">Create account</a>
+</p>
 
 </body>
 
 </html>
+
 """
 
 
 # =========================
-# HOME ROUTE
+# HOME / FEED
 # =========================
 
 @app.route("/")
 def home():
 
-    user_id = session.get("user_id")
-
     conn = get_db()
+
+    current_user_id = session.get("user_id")
 
     media = conn.execute("""
         SELECT
@@ -1360,8 +961,7 @@ def home():
             ) AS comment_count,
 
             CASE
-                WHEN ? IS NOT NULL
-                AND EXISTS (
+                WHEN EXISTS (
                     SELECT 1
                     FROM likes
                     WHERE likes.media_id = media.id
@@ -1374,10 +974,10 @@ def home():
         FROM media
 
         JOIN users
-        ON media.user_id = users.id
+        ON users.id = media.user_id
 
-        ORDER BY media.id DESC
-    """, (user_id, user_id)).fetchall()
+        ORDER BY media.created_at DESC
+    """, (current_user_id or 0,)).fetchall()
 
     conn.close()
 
@@ -1388,108 +988,86 @@ def home():
 
 
 # =========================
-# LIKE ROUTE
+# LIKE / UNLIKE
 # =========================
 
 @app.route(
     "/like/<int:media_id>",
     methods=["POST"]
 )
-def like_media(media_id):
+def like(media_id):
 
     if "user_id" not in session:
 
         return {
-            "error": "Please login first."
+            "error": "Login required"
         }, 401
 
     user_id = session["user_id"]
 
     conn = get_db()
 
-    media = conn.execute(
-        """
-        SELECT id
-        FROM media
-        WHERE id = ?
-        """,
-        (media_id,)
-    ).fetchone()
-
-    if media is None:
-
-        conn.close()
-
-        return {
-            "error": "Post not found."
-        }, 404
-
-    existing_like = conn.execute(
-        """
+    existing = conn.execute("""
         SELECT id
         FROM likes
         WHERE user_id = ?
         AND media_id = ?
-        """,
-        (
-            user_id,
-            media_id
-        )
-    ).fetchone()
+    """, (
+        user_id,
+        media_id
+    )).fetchone()
 
-    if existing_like:
 
-        conn.execute(
-            """
+    if existing:
+
+        conn.execute("""
             DELETE FROM likes
             WHERE user_id = ?
             AND media_id = ?
-            """,
-            (
-                user_id,
-                media_id
-            )
-        )
+        """, (
+            user_id,
+            media_id
+        ))
 
         liked = False
 
     else:
 
-        conn.execute(
-            """
-            INSERT INTO likes
-            (user_id, media_id)
-            VALUES (?, ?)
-            """,
-            (
+        conn.execute("""
+            INSERT INTO likes (
                 user_id,
                 media_id
             )
-        )
+            VALUES (?, ?)
+        """, (
+            user_id,
+            media_id
+        ))
 
         liked = True
 
-    conn.commit()
 
-    like_count = conn.execute(
-        """
+    like_count = conn.execute("""
         SELECT COUNT(*)
         FROM likes
         WHERE media_id = ?
-        """,
-        (media_id,)
-    ).fetchone()[0]
+    """, (
+        media_id,
+    )).fetchone()[0]
+
+
+    conn.commit()
 
     conn.close()
 
     return {
         "liked": liked,
-        "count": like_count
+        "like_count": like_count
     }
 
 
 # =========================
-# COMMENT ROUTE
+# ADD COMMENT
 # =========================
 
 @app.route(
@@ -1501,143 +1079,130 @@ def add_comment(media_id):
     if "user_id" not in session:
 
         return {
-            "error": "Please login first."
+            "error": "Login required"
         }, 401
-
-    user_id = session["user_id"]
 
     data = request.get_json()
 
-    if not data:
-
-        return {
-            "error": "Invalid request."
-        }, 400
-
-    text = data.get(
-        "text",
-        ""
-    ).strip()
+    text = (
+        data.get("text", "").strip()
+        if data
+        else ""
+    )
 
     if not text:
 
         return {
-            "error": "Comment cannot be empty."
+            "error": "Comment cannot be empty"
         }, 400
 
     if len(text) > 500:
 
         return {
-            "error": "Comment is too long."
+            "error": "Comment too long"
         }, 400
+
+
+    user_id = session["user_id"]
 
     conn = get_db()
 
-    media = conn.execute(
-        """
+    media_exists = conn.execute("""
         SELECT id
         FROM media
         WHERE id = ?
-        """,
-        (media_id,)
-    ).fetchone()
+    """, (
+        media_id,
+    )).fetchone()
 
-    if media is None:
+
+    if not media_exists:
 
         conn.close()
 
         return {
-            "error": "Post not found."
+            "error": "Media not found"
         }, 404
 
-    conn.execute(
-        """
-        INSERT INTO comments
-        (user_id, media_id, text)
-        VALUES (?, ?, ?)
-        """,
-        (
+
+    conn.execute("""
+        INSERT INTO comments (
             user_id,
             media_id,
             text
         )
-    )
+        VALUES (?, ?, ?)
+    """, (
+        user_id,
+        media_id,
+        text
+    ))
+
+
+    username = conn.execute("""
+        SELECT username
+        FROM users
+        WHERE id = ?
+    """, (
+        user_id,
+    )).fetchone()["username"]
+
 
     conn.commit()
 
     conn.close()
 
+
     return {
-        "success": True,
-        "text": text,
-        "username": session.get(
-            "username",
-            "User"
-        )
+        "username": username,
+        "text": text
     }
 
 
 # =========================
-# GET COMMENTS ROUTE
+# LOAD COMMENTS
 # =========================
 
 @app.route(
-    "/comments/<int:media_id>",
-    methods=["GET"]
+    "/comments/<int:media_id>"
 )
 def get_comments(media_id):
 
     conn = get_db()
 
-    media = conn.execute(
-        """
-        SELECT id
-        FROM media
-        WHERE id = ?
-        """,
-        (media_id,)
-    ).fetchone()
-
-    if media is None:
-
-        conn.close()
-
-        return {
-            "error": "Post not found."
-        }, 404
-
-    comments = conn.execute(
-        """
+    comments = conn.execute("""
         SELECT
             comments.text,
             users.username
+
         FROM comments
 
         JOIN users
-        ON comments.user_id = users.id
+        ON users.id = comments.user_id
 
         WHERE comments.media_id = ?
 
-        ORDER BY comments.id ASC
-        """,
-        (media_id,)
-    ).fetchall()
+        ORDER BY comments.created_at ASC
+    """, (
+        media_id,
+    )).fetchall()
+
 
     conn.close()
 
-    return {
-        "comments": [
-            {
-                "username": comment["username"],
-                "text": comment["text"]
-            }
-            for comment in comments
-        ]
-    }
+
+    return [
+        {
+            "username": comment["username"],
+            "text": comment["text"]
+        }
+
+        for comment in comments
+    ]
 
 
 # =========================
-# SIGN UP ROUTE
+# SIGNUP
 # =========================
 
 @app.route(
@@ -1646,86 +1211,67 @@ def get_comments(media_id):
 )
 def signup():
 
-    if request.method == "GET":
+    if request.method == "POST":
 
-        return render_template_string(
-            SIGNUP_HTML,
-            error=""
+        username = request.form[
+            "username"
+        ].strip()
+
+        password = request.form[
+            "password"
+        ]
+
+
+        if not username or not password:
+
+            return "Username and password required"
+
+
+        hashed_password = (
+            generate_password_hash(password)
         )
 
-    username = request.form.get(
-        "username",
-        ""
-    ).strip()
-
-    password = request.form.get(
-        "password",
-        ""
-    )
-
-    if not username or not password:
-
-        return render_template_string(
-            SIGNUP_HTML,
-            error="Please enter a username and password."
-        )
-
-    if len(username) < 3:
-
-        return render_template_string(
-            SIGNUP_HTML,
-            error="Username must be at least 3 characters."
-        )
-
-    if len(password) < 6:
-
-        return render_template_string(
-            SIGNUP_HTML,
-            error="Password must be at least 6 characters."
-        )
-
-    password_hash = generate_password_hash(
-        password
-    )
-
-    try:
 
         conn = get_db()
 
-        cursor = conn.execute(
-            """
-            INSERT INTO users
-            (username, password, bio)
-            VALUES (?, ?, ?)
-            """,
-            (
+        try:
+
+            cursor = conn.execute("""
+                INSERT INTO users (
+                    username,
+                    password
+                )
+                VALUES (?, ?)
+            """, (
                 username,
-                password_hash,
-                "Welcome to my profile 🎬"
-            )
-        )
+                hashed_password
+            ))
 
-        conn.commit()
+            conn.commit()
 
-        user_id = cursor.lastrowid
+            user_id = cursor.lastrowid
 
-        conn.close()
+            session["user_id"] = user_id
+            session["username"] = username
 
-        session["user_id"] = user_id
-        session["username"] = username
+            conn.close()
 
-        return redirect("/profile")
+            return redirect("/")
 
-    except sqlite3.IntegrityError:
+        except sqlite3.IntegrityError:
 
-        return render_template_string(
-            SIGNUP_HTML,
-            error="That username is already taken."
-        )
+            conn.close()
+
+            return "Username already exists"
+
+
+    return render_template_string(
+        SIGNUP_HTML
+    )
 
 
 # =========================
-# LOGIN ROUTE
+# LOGIN
 # =========================
 
 @app.route(
@@ -1734,68 +1280,59 @@ def signup():
 )
 def login():
 
-    if request.method == "GET":
+    if request.method == "POST":
 
-        return render_template_string(
-            LOGIN_HTML,
-            error=""
-        )
+        username = request.form[
+            "username"
+        ].strip()
 
-    username = request.form.get(
-        "username",
-        ""
-    ).strip()
+        password = request.form[
+            "password"
+        ]
 
-    password = request.form.get(
-        "password",
-        ""
+
+        conn = get_db()
+
+        user = conn.execute("""
+            SELECT *
+            FROM users
+            WHERE username = ?
+        """, (
+            username,
+        )).fetchone()
+
+
+        conn.close()
+
+
+        if not user:
+
+            return "Invalid username or password"
+
+
+        if not check_password_hash(
+            user["password"],
+            password
+        ):
+
+            return "Invalid username or password"
+
+
+        session["user_id"] = user["id"]
+
+        session["username"] = user["username"]
+
+
+        return redirect("/")
+
+
+    return render_template_string(
+        LOGIN_HTML
     )
-
-    if not username or not password:
-
-        return render_template_string(
-            LOGIN_HTML,
-            error="Please enter your username and password."
-        )
-
-    conn = get_db()
-
-    user = conn.execute(
-        """
-        SELECT *
-        FROM users
-        WHERE username = ?
-        """,
-        (username,)
-    ).fetchone()
-
-    conn.close()
-
-    if user is None:
-
-        return render_template_string(
-            LOGIN_HTML,
-            error="Invalid username or password."
-        )
-
-    if not check_password_hash(
-        user["password"],
-        password
-    ):
-
-        return render_template_string(
-            LOGIN_HTML,
-            error="Invalid username or password."
-        )
-
-    session["user_id"] = user["id"]
-    session["username"] = user["username"]
-
-    return redirect("/profile")
 
 
 # =========================
-# LOGOUT ROUTE
+# LOGOUT
 # =========================
 
 @app.route("/logout")
@@ -1807,107 +1344,52 @@ def logout():
 
 
 # =========================
-# PROFILE ROUTE
+# PROFILE
 # =========================
 
-@app.route(
-    "/profile",
-    methods=["GET", "POST"]
-)
-def profile_page():
+@app.route("/profile")
+def profile():
 
     if "user_id" not in session:
 
         return redirect("/login")
 
+
     user_id = session["user_id"]
 
     conn = get_db()
 
-    user = conn.execute(
-        """
+
+    user = conn.execute("""
         SELECT *
         FROM users
         WHERE id = ?
-        """,
-        (user_id,)
-    ).fetchone()
+    """, (
+        user_id,
+    )).fetchone()
 
-    post_count = conn.execute(
-        """
+
+    post_count = conn.execute("""
         SELECT COUNT(*)
         FROM media
         WHERE user_id = ?
-        """,
-        (user_id,)
-    ).fetchone()[0]
+    """, (
+        user_id,
+    )).fetchone()[0]
+
 
     conn.close()
 
-    if user is None:
-
-        session.clear()
-
-        return redirect("/login")
-
-    if request.method == "POST":
-
-        username = request.form.get(
-            "username",
-            ""
-        ).strip()
-
-        bio = request.form.get(
-            "bio",
-            ""
-        ).strip()
-
-        if not username:
-
-            username = user["username"]
-
-        try:
-
-            conn = get_db()
-
-            conn.execute(
-                """
-                UPDATE users
-                SET username = ?, bio = ?
-                WHERE id = ?
-                """,
-                (
-                    username,
-                    bio,
-                    user_id
-                )
-            )
-
-            conn.commit()
-            conn.close()
-
-            session["username"] = username
-
-            return redirect("/profile")
-
-        except sqlite3.IntegrityError:
-
-            return "That username is already taken.", 400
-
-    profile = {
-        "username": user["username"],
-        "bio": user["bio"]
-    }
 
     return render_template_string(
         PROFILE_HTML,
-        profile=profile,
+        user=user,
         post_count=post_count
     )
 
 
 # =========================
-# UPLOAD ROUTE
+# UPLOAD
 # =========================
 
 @app.route(
@@ -1920,74 +1402,130 @@ def upload():
 
         return redirect("/login")
 
-    if request.method == "GET":
 
-        return render_template_string(
-            UPLOAD_HTML
+    if request.method == "POST":
+
+        file = request.files.get(
+            "file"
         )
 
-    if "file" not in request.files:
 
-        return "No file selected", 400
+        if not file:
 
-    file = request.files["file"]
+            return "No file selected"
 
-    if not file.filename:
-
-        return "No file selected", 400
-
-    try:
 
         result = cloudinary.uploader.upload(
             file,
             resource_type="auto"
         )
 
-        conn = get_db()
 
-        conn.execute(
-            """
-            INSERT INTO media
-            (user_id, url, media_type)
-            VALUES (?, ?, ?)
-            """,
-            (
-                session["user_id"],
-                result["secure_url"],
-                result["resource_type"]
-            )
+        url = result["secure_url"]
+
+
+        resource_type = result.get(
+            "resource_type",
+            "image"
         )
 
+
+        media_type = (
+            "video"
+            if resource_type == "video"
+            else "image"
+        )
+
+
+        conn = get_db()
+
+
+        conn.execute("""
+            INSERT INTO media (
+                user_id,
+                url,
+                media_type
+            )
+            VALUES (?, ?, ?)
+        """, (
+            session["user_id"],
+            url,
+            media_type
+        ))
+
+
         conn.commit()
+
         conn.close()
 
-        return """
-        <html>
 
-        <body
-        style="font-family:Arial;text-align:center;padding:30px">
+        return redirect("/")
 
-        <h2>✅ Upload successful!</h2>
 
-        <p>Your upload is now connected to your account.</p>
+    return """
 
-        <br>
+<!DOCTYPE html>
 
-        <a href="/">
-        🎬 View Feed
-        </a>
+<html>
 
-        </body>
+<head>
 
-        </html>
-        """
+<meta name="viewport"
+      content="width=device-width, initial-scale=1">
 
-    except Exception as e:
+<title>Upload</title>
 
-        return f"""
-        <h2>Upload failed</h2>
-        <p>{str(e)}</p>
-        """, 500
+<style>
+
+body {
+    background: #000;
+    color: white;
+    font-family: Arial;
+    padding: 30px;
+}
+
+input {
+    margin: 20px 0;
+}
+
+button {
+    padding: 12px 25px;
+    background: #ff0050;
+    color: white;
+    border: none;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Upload</h1>
+
+<form
+    method="POST"
+    enctype="multipart/form-data">
+
+<input
+    type="file"
+    name="file"
+    accept="video/*,image/*"
+    required>
+
+<br>
+
+<button type="submit">
+    Upload
+</button>
+
+</form>
+
+</body>
+
+</html>
+
+"""
 
 
 # =========================
@@ -1996,11 +1534,12 @@ def upload():
 
 if __name__ == "__main__":
 
-    port = int(
-        os.environ.get("PORT", 5000)
-    )
-
     app.run(
         host="0.0.0.0",
-        port=port
+        port=int(
+            os.environ.get(
+                "PORT",
+                5000
+            )
+        )
     )
