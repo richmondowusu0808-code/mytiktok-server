@@ -18,11 +18,13 @@ HTML = """
 <!DOCTYPE html>
 <html>
 <head>
+
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>MyTikTok</title>
 
     <style>
+
         * {
             box-sizing: border-box;
         }
@@ -84,7 +86,7 @@ HTML = """
             z-index: 10;
             display: flex;
             flex-direction: column;
-            gap: 18px;
+            gap: 8px;
             align-items: center;
         }
 
@@ -99,13 +101,14 @@ HTML = """
             cursor: pointer;
         }
 
-        .action-text {
-            font-size: 12px;
-            margin-top: -12px;
-        }
-
         .liked {
             color: red;
+        }
+
+        .count {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
         }
 
         .info {
@@ -135,13 +138,19 @@ HTML = """
             justify-content: center;
             text-align: center;
         }
+
     </style>
+
 </head>
 
 <body>
 
 <div class="top">
-    <a class="upload" href="/upload">📤 Upload</a>
+
+    <a class="upload" href="/upload">
+        📤 Upload
+    </a>
+
 </div>
 
 <div class="feed">
@@ -159,48 +168,62 @@ HTML = """
                     playsinline
                     loop
                     preload="metadata">
+
                     <source src="{{ item.url }}">
+
                 </video>
 
             {% else %}
 
-                <img src="{{ item.url }}" alt="Uploaded image">
+                <img
+                    src="{{ item.url }}"
+                    alt="Uploaded image">
 
             {% endif %}
+
 
             <div class="side-buttons">
 
                 <button
                     class="action"
                     onclick="likePost(this)">
+
                     ❤️
+
                 </button>
 
-                <div class="action-text">
-                    <span>Like</span>
+                <div class="count">
+                    0
                 </div>
+
 
                 <button
                     class="action"
                     onclick="commentPost()">
+
                     💬
+
                 </button>
 
-                <div class="action-text">
-                    <span>Comment</span>
+                <div class="count">
+                    Comment
                 </div>
+
 
                 <button
                     class="action"
                     onclick="sharePost('{{ item.url }}')">
+
                     ↗️
+
                 </button>
 
-                <div class="action-text">
-                    <span>Share</span>
+                <div class="count">
+                    Share
                 </div>
 
             </div>
+
 
             <div class="info">
 
@@ -221,23 +244,50 @@ HTML = """
 {% else %}
 
     <div class="empty">
+
         <div>
+
             <h2>🎬 No videos yet</h2>
-            <p>Tap Upload to add your first video.</p>
+
+            <p>
+                Tap Upload to add your first video.
+            </p>
+
         </div>
+
     </div>
 
 {% endif %}
 
 </div>
 
+
 <script>
 
 function likePost(button) {
 
-    button.classList.toggle("liked");
+    const count = button.nextElementSibling;
+
+    let number = parseInt(count.innerText);
+
+    if (button.classList.contains("liked")) {
+
+        number = number - 1;
+
+        button.classList.remove("liked");
+
+    } else {
+
+        number = number + 1;
+
+        button.classList.add("liked");
+
+    }
+
+    count.innerText = number;
 
 }
+
 
 function commentPost() {
 
@@ -251,14 +301,19 @@ function commentPost() {
 
 }
 
+
 function sharePost(url) {
 
     if (navigator.share) {
 
         navigator.share({
+
             title: "MyTikTok",
+
             text: "Check out this video!",
+
             url: url
+
         });
 
     } else {
@@ -274,8 +329,10 @@ function sharePost(url) {
 </script>
 
 </body>
+
 </html>
 """
+
 
 UPLOAD_HTML = """
 <!DOCTYPE html>
