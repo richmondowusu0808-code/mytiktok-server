@@ -17,6 +17,7 @@ media = []
 HTML = """
 <!DOCTYPE html>
 <html>
+
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -69,9 +70,10 @@ video, img {
     text-align: center;
 }
 
-.upload {
+.nav-button {
     display: inline-block;
-    padding: 10px 18px;
+    padding: 10px 16px;
+    margin: 3px;
     background: white;
     color: black;
     text-decoration: none;
@@ -186,6 +188,62 @@ video, img {
     text-align: center;
 }
 
+.profile {
+    min-height: 100vh;
+    background: #111;
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: #333;
+    margin: 30px auto 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+}
+
+.profile-name {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.bio {
+    color: #ccc;
+    margin: 10px 0 25px;
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 35px;
+    margin-bottom: 30px;
+}
+
+.stat-number {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.stat-label {
+    color: #aaa;
+    font-size: 13px;
+}
+
+.back {
+    display: inline-block;
+    padding: 10px 20px;
+    background: white;
+    color: black;
+    text-decoration: none;
+    border-radius: 20px;
+    font-weight: bold;
+}
+
 </style>
 
 </head>
@@ -194,8 +252,16 @@ video, img {
 
 <div class="top">
 
-<a class="upload" href="/upload">
+<a class="nav-button" href="/">
+🎬 Feed
+</a>
+
+<a class="nav-button" href="/upload">
 📤 Upload
+</a>
+
+<a class="nav-button" href="/profile">
+👤 Profile
 </a>
 
 </div>
@@ -235,9 +301,7 @@ alt="Uploaded image">
 <button
 class="action"
 onclick="likePost(this)">
-
 ❤️
-
 </button>
 
 <div class="count">
@@ -248,9 +312,7 @@ onclick="likePost(this)">
 <button
 class="action"
 onclick="openComments(this)">
-
 💬
-
 </button>
 
 <div class="count comment-count">
@@ -261,9 +323,7 @@ onclick="openComments(this)">
 <button
 class="action"
 onclick="sharePost('{{ item.url }}')">
-
 ↗️
-
 </button>
 
 <div class="count">
@@ -291,9 +351,7 @@ My new video 🎬
 <button
 class="close-comments"
 onclick="closeComments(this)">
-
 ✕
-
 </button>
 
 <h3>Comments</h3>
@@ -309,12 +367,10 @@ placeholder="Write a comment...">
 <button
 class="comment-send"
 onclick="sendComment(this)">
-
 Send
 </button>
 
 </div>
-
 
 </div>
 
@@ -351,20 +407,19 @@ function likePost(button) {
 
     if (button.classList.contains("liked")) {
 
-        number = number - 1;
+        number--;
 
         button.classList.remove("liked");
 
     } else {
 
-        number = number + 1;
+        number++;
 
         button.classList.add("liked");
 
     }
 
     count.innerText = number;
-
 }
 
 
@@ -375,7 +430,6 @@ function openComments(button) {
     const box = post.querySelector(".comments-box");
 
     box.style.display = "block";
-
 }
 
 
@@ -384,7 +438,6 @@ function closeComments(button) {
     const box = button.closest(".comments-box");
 
     box.style.display = "none";
-
 }
 
 
@@ -392,27 +445,32 @@ function sendComment(button) {
 
     const box = button.closest(".comments-box");
 
-    const input = box.querySelector(".comment-input");
+    const input =
+        box.querySelector(".comment-input");
 
-    const list = box.querySelector(".comments-list");
+    const list =
+        box.querySelector(".comments-list");
 
-    const post = button.closest(".post");
+    const post =
+        button.closest(".post");
 
-    const count = post.querySelector(".comment-count");
+    const count =
+        post.querySelector(".comment-count");
 
-    const text = input.value.trim();
+    const text =
+        input.value.trim();
 
     if (!text) {
-
         return;
-
     }
 
-    const comment = document.createElement("div");
+    const comment =
+        document.createElement("div");
 
     comment.className = "comment-item";
 
-    comment.innerText = "@user: " + text;
+    comment.innerText =
+        "@user: " + text;
 
     list.appendChild(comment);
 
@@ -420,7 +478,6 @@ function sendComment(button) {
 
     count.innerText =
         list.children.length;
-
 }
 
 
@@ -429,13 +486,9 @@ function sharePost(url) {
     if (navigator.share) {
 
         navigator.share({
-
             title: "MyTikTok",
-
             text: "Check out this video!",
-
             url: url
-
         });
 
     } else {
@@ -445,10 +498,139 @@ function sharePost(url) {
         alert("Video link copied!");
 
     }
-
 }
 
 </script>
+
+</body>
+
+</html>
+"""
+
+
+PROFILE_HTML = """
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1">
+
+<title>Profile</title>
+
+<style>
+
+body {
+    margin: 0;
+    background: #111;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+.profile {
+    padding: 40px 20px;
+}
+
+.avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: #333;
+    margin: 30px auto 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+}
+
+.name {
+    font-size: 25px;
+    font-weight: bold;
+}
+
+.bio {
+    color: #ccc;
+    margin: 10px 0 25px;
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 35px;
+    margin-bottom: 30px;
+}
+
+.number {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.label {
+    color: #aaa;
+    font-size: 13px;
+}
+
+.button {
+    display: inline-block;
+    padding: 12px 22px;
+    margin: 5px;
+    background: white;
+    color: black;
+    text-decoration: none;
+    border-radius: 22px;
+    font-weight: bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="profile">
+
+<div class="avatar">
+👤
+</div>
+
+<div class="name">
+@user
+</div>
+
+<div class="bio">
+Welcome to my profile 🎬
+</div>
+
+<div class="stats">
+
+<div>
+<div class="number">0</div>
+<div class="label">Following</div>
+</div>
+
+<div>
+<div class="number">0</div>
+<div class="label">Followers</div>
+</div>
+
+<div>
+<div class="number">0</div>
+<div class="label">Likes</div>
+</div>
+
+</div>
+
+<a class="button" href="/">
+🎬 Feed
+</a>
+
+<a class="button" href="/upload">
+📤 Upload
+</a>
+
+</div>
 
 </body>
 
@@ -510,6 +692,14 @@ def home():
     return render_template_string(
         HTML,
         media=media
+    )
+
+
+@app.route("/profile")
+def profile():
+
+    return render_template_string(
+        PROFILE_HTML
     )
 
 
