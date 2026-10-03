@@ -12,7 +12,6 @@ cloudinary.config(
     secure=True
 )
 
-# Temporary in-memory media list
 media = []
 
 HTML = """
@@ -20,67 +19,78 @@ HTML = """
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>My Media App</title>
+    <title>My Media</title>
 
     <style>
-        body {
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
             margin: 0;
-            background: #111;
+            padding: 0;
+            background: black;
             color: white;
             font-family: Arial, sans-serif;
         }
 
-        header {
-            padding: 18px;
-            text-align: center;
-            position: sticky;
-            top: 0;
-            background: #111;
-            z-index: 10;
-        }
-
-        .upload {
-            display: block;
-            width: fit-content;
-            margin: 10px auto 20px;
-            padding: 12px 20px;
-            background: white;
-            color: black;
-            text-decoration: none;
-            border-radius: 8px;
-        }
-
         .feed {
-            max-width: 600px;
-            margin: auto;
+            height: 100vh;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
         }
 
         .post {
-            margin-bottom: 25px;
-            background: #000;
+            height: 100vh;
+            width: 100%;
+            position: relative;
+            scroll-snap-align: start;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: black;
         }
 
         video, img {
             width: 100%;
-            max-height: 80vh;
+            height: 100%;
             object-fit: contain;
-            display: block;
+        }
+
+        .top {
+            position: fixed;
+            top: 15px;
+            left: 0;
+            right: 0;
+            z-index: 20;
+            text-align: center;
+        }
+
+        .upload {
+            display: inline-block;
+            padding: 10px 18px;
+            background: white;
+            color: black;
+            text-decoration: none;
+            border-radius: 20px;
+            font-weight: bold;
         }
 
         .empty {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            padding: 50px 20px;
-            color: #aaa;
         }
     </style>
 </head>
 
 <body>
 
-<header>
-    <h2>🎬 My Media Feed</h2>
+<div class="top">
     <a class="upload" href="/upload">📤 Upload</a>
-</header>
+</div>
 
 <div class="feed">
 
@@ -90,17 +100,21 @@ HTML = """
 
         <div class="post">
 
-        {% if item.type == "video" %}
+            {% if item.type == "video" %}
 
-            <video controls playsinline preload="metadata">
-                <source src="{{ item.url }}">
-            </video>
+                <video
+                    controls
+                    playsinline
+                    loop
+                    preload="metadata">
+                    <source src="{{ item.url }}">
+                </video>
 
-        {% else %}
+            {% else %}
 
-            <img src="{{ item.url }}" alt="Uploaded image">
+                <img src="{{ item.url }}" alt="Uploaded image">
 
-        {% endif %}
+            {% endif %}
 
         </div>
 
@@ -109,8 +123,10 @@ HTML = """
 {% else %}
 
     <div class="empty">
-        <h3>No uploads yet</h3>
-        <p>Upload your first image or video.</p>
+        <div>
+            <h2>🎬 No videos yet</h2>
+            <p>Tap Upload to add your first video.</p>
+        </div>
     </div>
 
 {% endif %}
@@ -209,7 +225,6 @@ def upload():
 
 
 if __name__ == "__main__":
-
     port = int(os.environ.get("PORT", 5000))
 
     app.run(
