@@ -472,6 +472,15 @@ video, img {
     border-bottom: 1px solid #ddd;
 }
 
+.comment-user {
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.comment-text {
+    word-break: break-word;
+}
+
 .comment-input {
     width: 75%;
     padding: 10px;
@@ -486,6 +495,10 @@ video, img {
     border-radius: 20px;
     background: black;
     color: white;
+}
+
+.comment-send:disabled {
+    opacity: 0.5;
 }
 
 .close-comments {
@@ -539,7 +552,9 @@ video, img {
 
 {% for item in media %}
 
-<div class="post" data-media-id="{{ item.id }}">
+<div
+class="post"
+data-media-id="{{ item.id }}">
 
 {% if item.media_type == "video" %}
 
@@ -582,7 +597,7 @@ type="button">
 </button>
 
 <div class="count comment-count">
-0
+{{ item.comment_count }}
 </div>
 
 <button
@@ -627,7 +642,9 @@ type="button">
 <input
 class="comment-input"
 type="text"
-placeholder="Write a comment...">
+maxlength="500"
+placeholder="Write a comment..."
+onkeydown="commentKeyDown(event, this)">
 
 <button
 class="comment-send"
@@ -687,7 +704,10 @@ async function likePost(button) {
 
         if (!response.ok) {
 
-            alert(data.error || "Unable to like this post.");
+            alert(
+                data.error ||
+                "Unable to like this post."
+            );
 
             button.disabled = false;
 
@@ -708,7 +728,9 @@ async function likePost(button) {
 
     } catch (error) {
 
-        alert("Something went wrong. Please try again.");
+        alert(
+            "Something went wrong. Please try again."
+        );
 
     }
 
@@ -716,36 +738,97 @@ async function likePost(button) {
 }
 
 
-function openComments(button) {
+async function openComments(button) {
 
     const post = button.closest(".post");
 
-    const box = post.querySelector(".comments-box");
+    const box =
+        post.querySelector(".comments-box");
 
     box.style.display = "block";
+
+    await loadComments(post);
 }
 
 
 function closeComments(button) {
 
-    const box = button.closest(".comments-box");
+    const box =
+        button.closest(".comments-box");
 
     box.style.display = "none";
 }
 
 
-function sendComment(button) {
+async function loadComments(post) {
 
-    const box = button.closest(".comments-box");
+    const mediaId =
+        post.dataset.mediaId;
 
-    const input =
-        box.querySelector(".comment-input");
+    const box =
+        post.querySelector(".comments-box");
 
     const list =
         box.querySelector(".comments-list");
 
+    try {
+
+        const response = await fetch(
+            "/comments/" + mediaId
+        );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+
+            return;
+        }
+
+        list.innerHTML = "";
+
+        data.comments.forEach(
+            function(comment) {
+
+                addCommentToList(
+                    list,
+                    comment.username,
+                    comment.text
+                );
+
+            }
+        );
+
+        const count =
+            post.querySelector(".comment-count");
+
+        count.innerText =
+            data.comments.length;
+
+    } catch (error) {
+
+        console.log(
+            "Unable to load comments.",
+            error
+        );
+
+    }
+}
+
+
+async function sendComment(button) {
+
+    const box =
+        button.closest(".comments-box");
+
+    const input =
+        box.querySelector(".comment-input");
+
     const post =
         button.closest(".post");
+
+    const list =
+        box.querySelector(".comments-list");
 
     const count =
         post.querySelector(".comment-count");
@@ -754,23 +837,127 @@ function sendComment(button) {
         input.value.trim();
 
     if (!text) {
+
         return;
     }
+
+    const mediaId =
+        post.dataset.mediaId;
+
+    button.disabled = true;
+
+    try {
+
+        const response = await fetch(
+            "/comment/" + mediaId,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+                body: JSON.stringify({
+                    text: text
+                })
+            }
+        );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+
+            alert(
+                data.error ||
+                "Unable to add comment."
+            );
+
+            button.disabled = false;
+
+            return;
+        }
+
+        addCommentToList(
+            list,
+            data.username,
+            data.text
+        );
+
+        input.value = "";
+
+        count.innerText =
+            list.children.length;
+
+    } catch (error) {
+
+        alert(
+            "Something went wrong. Please try again."
+        );
+
+    }
+
+    button.disabled = false;
+}
+
+
+function addCommentToList(
+    list,
+    username,
+    text
+) {
 
     const comment =
         document.createElement("div");
 
-    comment.className = "comment-item";
+    comment.className =
+        "comment-item";
 
-    comment.innerText =
+    const user =
+        document.createElement("span");
+
+    user.className =
+        "comment-user";
+
+    user.innerText =
+        "@" + username;
+
+    const message =
+        document.createElement("span");
+
+    message.className =
+        "comment-text";
+
+    message.innerText =
         text;
 
+    comment.appendChild(user);
+
+    comment.appendChild(message);
+
     list.appendChild(comment);
+}
 
-    input.value = "";
 
-    count.innerText =
-        list.children.length;
+function commentKeyDown(
+    event,
+    input
+) {
+
+    if (
+        event.key === "Enter"
+        && !event.shiftKey
+    ) {
+
+        event.preventDefault();
+
+        const box =
+            input.closest(".comments-box");
+
+        const button =
+            box.querySelector(".comment-send");
+
+        sendComment(button);
+    }
 }
 
 
@@ -1106,7 +1293,8 @@ content="width=device-width, initial-scale=1">
 
 </head>
 
-<body style="font-family:Arial;text-align:center;padding:30px">
+<body
+style="font-family:Arial;text-align:center;padding:30px">
 
 <h1>📤 Upload</h1>
 
@@ -1165,6 +1353,12 @@ def home():
                 WHERE likes.media_id = media.id
             ) AS like_count,
 
+            (
+                SELECT COUNT(*)
+                FROM comments
+                WHERE comments.media_id = media.id
+            ) AS comment_count,
+
             CASE
                 WHEN ? IS NOT NULL
                 AND EXISTS (
@@ -1197,7 +1391,10 @@ def home():
 # LIKE ROUTE
 # =========================
 
-@app.route("/like/<int:media_id>", methods=["POST"])
+@app.route(
+    "/like/<int:media_id>",
+    methods=["POST"]
+)
 def like_media(media_id):
 
     if "user_id" not in session:
@@ -1292,10 +1489,161 @@ def like_media(media_id):
 
 
 # =========================
+# COMMENT ROUTE
+# =========================
+
+@app.route(
+    "/comment/<int:media_id>",
+    methods=["POST"]
+)
+def add_comment(media_id):
+
+    if "user_id" not in session:
+
+        return {
+            "error": "Please login first."
+        }, 401
+
+    user_id = session["user_id"]
+
+    data = request.get_json()
+
+    if not data:
+
+        return {
+            "error": "Invalid request."
+        }, 400
+
+    text = data.get(
+        "text",
+        ""
+    ).strip()
+
+    if not text:
+
+        return {
+            "error": "Comment cannot be empty."
+        }, 400
+
+    if len(text) > 500:
+
+        return {
+            "error": "Comment is too long."
+        }, 400
+
+    conn = get_db()
+
+    media = conn.execute(
+        """
+        SELECT id
+        FROM media
+        WHERE id = ?
+        """,
+        (media_id,)
+    ).fetchone()
+
+    if media is None:
+
+        conn.close()
+
+        return {
+            "error": "Post not found."
+        }, 404
+
+    conn.execute(
+        """
+        INSERT INTO comments
+        (user_id, media_id, text)
+        VALUES (?, ?, ?)
+        """,
+        (
+            user_id,
+            media_id,
+            text
+        )
+    )
+
+    conn.commit()
+
+    conn.close()
+
+    return {
+        "success": True,
+        "text": text,
+        "username": session.get(
+            "username",
+            "User"
+        )
+    }
+
+
+# =========================
+# GET COMMENTS ROUTE
+# =========================
+
+@app.route(
+    "/comments/<int:media_id>",
+    methods=["GET"]
+)
+def get_comments(media_id):
+
+    conn = get_db()
+
+    media = conn.execute(
+        """
+        SELECT id
+        FROM media
+        WHERE id = ?
+        """,
+        (media_id,)
+    ).fetchone()
+
+    if media is None:
+
+        conn.close()
+
+        return {
+            "error": "Post not found."
+        }, 404
+
+    comments = conn.execute(
+        """
+        SELECT
+            comments.text,
+            users.username
+        FROM comments
+
+        JOIN users
+        ON comments.user_id = users.id
+
+        WHERE comments.media_id = ?
+
+        ORDER BY comments.id ASC
+        """,
+        (media_id,)
+    ).fetchall()
+
+    conn.close()
+
+    return {
+        "comments": [
+            {
+                "username": comment["username"],
+                "text": comment["text"]
+            }
+            for comment in comments
+        ]
+    }
+
+
+# =========================
 # SIGN UP ROUTE
 # =========================
 
-@app.route("/signup", methods=["GET", "POST"])
+@app.route(
+    "/signup",
+    methods=["GET", "POST"]
+)
 def signup():
 
     if request.method == "GET":
@@ -1380,7 +1728,10 @@ def signup():
 # LOGIN ROUTE
 # =========================
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route(
+    "/login",
+    methods=["GET", "POST"]
+)
 def login():
 
     if request.method == "GET":
@@ -1459,7 +1810,10 @@ def logout():
 # PROFILE ROUTE
 # =========================
 
-@app.route("/profile", methods=["GET", "POST"])
+@app.route(
+    "/profile",
+    methods=["GET", "POST"]
+)
 def profile_page():
 
     if "user_id" not in session:
@@ -1556,7 +1910,10 @@ def profile_page():
 # UPLOAD ROUTE
 # =========================
 
-@app.route("/upload", methods=["GET", "POST"])
+@app.route(
+    "/upload",
+    methods=["GET", "POST"]
+)
 def upload():
 
     if "user_id" not in session:
