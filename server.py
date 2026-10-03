@@ -19,127 +19,174 @@ HTML = """
 <html>
 <head>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>MyTikTok</title>
+<title>MyTikTok</title>
 
-    <style>
+<style>
 
-        * {
-            box-sizing: border-box;
-        }
+* {
+    box-sizing: border-box;
+}
 
-        html, body {
-            margin: 0;
-            padding: 0;
-            background: black;
-            color: white;
-            font-family: Arial, sans-serif;
-        }
+html, body {
+    margin: 0;
+    padding: 0;
+    background: black;
+    color: white;
+    font-family: Arial, sans-serif;
+}
 
-        .feed {
-            height: 100vh;
-            overflow-y: scroll;
-            scroll-snap-type: y mandatory;
-        }
+.feed {
+    height: 100vh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+}
 
-        .post {
-            height: 100vh;
-            width: 100%;
-            position: relative;
-            scroll-snap-align: start;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: black;
-        }
+.post {
+    height: 100vh;
+    width: 100%;
+    position: relative;
+    scroll-snap-align: start;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: black;
+}
 
-        video, img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
+video, img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
 
-        .top {
-            position: fixed;
-            top: 15px;
-            left: 0;
-            right: 0;
-            z-index: 20;
-            text-align: center;
-        }
+.top {
+    position: fixed;
+    top: 15px;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    text-align: center;
+}
 
-        .upload {
-            display: inline-block;
-            padding: 10px 18px;
-            background: white;
-            color: black;
-            text-decoration: none;
-            border-radius: 20px;
-            font-weight: bold;
-        }
+.upload {
+    display: inline-block;
+    padding: 10px 18px;
+    background: white;
+    color: black;
+    text-decoration: none;
+    border-radius: 20px;
+    font-weight: bold;
+}
 
-        .side-buttons {
-            position: absolute;
-            right: 15px;
-            bottom: 120px;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            align-items: center;
-        }
+.side-buttons {
+    position: absolute;
+    right: 15px;
+    bottom: 120px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
 
-        .action {
-            background: rgba(0, 0, 0, 0.45);
-            border: none;
-            color: white;
-            font-size: 30px;
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            cursor: pointer;
-        }
+.action {
+    background: rgba(0, 0, 0, 0.45);
+    border: none;
+    color: white;
+    font-size: 30px;
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    cursor: pointer;
+}
 
-        .liked {
-            color: red;
-        }
+.liked {
+    color: red;
+}
 
-        .count {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
+.count {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
 
-        .info {
-            position: absolute;
-            left: 15px;
-            bottom: 35px;
-            right: 90px;
-            z-index: 10;
-            text-align: left;
-            text-shadow: 0 1px 4px black;
-        }
+.info {
+    position: absolute;
+    left: 15px;
+    bottom: 35px;
+    right: 90px;
+    z-index: 10;
+    text-align: left;
+    text-shadow: 0 1px 4px black;
+}
 
-        .username {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
+.username {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
 
-        .caption {
-            font-size: 15px;
-        }
+.caption {
+    font-size: 15px;
+}
 
-        .empty {
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
+.comments-box {
+    display: none;
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    background: white;
+    color: black;
+    padding: 15px;
+    border-radius: 15px;
+    z-index: 30;
+}
 
-    </style>
+.comments-list {
+    max-height: 180px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.comment-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.comment-input {
+    width: 75%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+}
+
+.comment-send {
+    width: 20%;
+    padding: 10px;
+    border: none;
+    border-radius: 20px;
+    background: black;
+    color: white;
+}
+
+.close-comments {
+    float: right;
+    border: none;
+    background: none;
+    font-size: 20px;
+}
+
+.empty {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+</style>
 
 </head>
 
@@ -147,115 +194,147 @@ HTML = """
 
 <div class="top">
 
-    <a class="upload" href="/upload">
-        📤 Upload
-    </a>
+<a class="upload" href="/upload">
+📤 Upload
+</a>
 
 </div>
+
 
 <div class="feed">
 
 {% if media %}
 
-    {% for item in media %}
+{% for item in media %}
 
-        <div class="post">
+<div class="post">
 
-            {% if item.type == "video" %}
+{% if item.type == "video" %}
 
-                <video
-                    controls
-                    playsinline
-                    loop
-                    preload="metadata">
+<video
+controls
+playsinline
+loop
+preload="metadata">
 
-                    <source src="{{ item.url }}">
+<source src="{{ item.url }}">
 
-                </video>
-
-            {% else %}
-
-                <img
-                    src="{{ item.url }}"
-                    alt="Uploaded image">
-
-            {% endif %}
-
-
-            <div class="side-buttons">
-
-                <button
-                    class="action"
-                    onclick="likePost(this)">
-
-                    ❤️
-
-                </button>
-
-                <div class="count">
-                    0
-                </div>
-
-
-                <button
-                    class="action"
-                    onclick="commentPost()">
-
-                    💬
-
-                </button>
-
-                <div class="count">
-                    Comment
-                </div>
-
-
-                <button
-                    class="action"
-                    onclick="sharePost('{{ item.url }}')">
-
-                    ↗️
-
-                </button>
-
-                <div class="count">
-                    Share
-                </div>
-
-            </div>
-
-
-            <div class="info">
-
-                <div class="username">
-                    @user
-                </div>
-
-                <div class="caption">
-                    My new video 🎬
-                </div>
-
-            </div>
-
-        </div>
-
-    {% endfor %}
+</video>
 
 {% else %}
 
-    <div class="empty">
+<img
+src="{{ item.url }}"
+alt="Uploaded image">
 
-        <div>
+{% endif %}
 
-            <h2>🎬 No videos yet</h2>
 
-            <p>
-                Tap Upload to add your first video.
-            </p>
+<div class="side-buttons">
 
-        </div>
+<button
+class="action"
+onclick="likePost(this)">
 
-    </div>
+❤️
+
+</button>
+
+<div class="count">
+0
+</div>
+
+
+<button
+class="action"
+onclick="openComments(this)">
+
+💬
+
+</button>
+
+<div class="count comment-count">
+0
+</div>
+
+
+<button
+class="action"
+onclick="sharePost('{{ item.url }}')">
+
+↗️
+
+</button>
+
+<div class="count">
+Share
+</div>
+
+</div>
+
+
+<div class="info">
+
+<div class="username">
+@user
+</div>
+
+<div class="caption">
+My new video 🎬
+</div>
+
+</div>
+
+
+<div class="comments-box">
+
+<button
+class="close-comments"
+onclick="closeComments(this)">
+
+✕
+
+</button>
+
+<h3>Comments</h3>
+
+<div class="comments-list">
+</div>
+
+<input
+class="comment-input"
+type="text"
+placeholder="Write a comment...">
+
+<button
+class="comment-send"
+onclick="sendComment(this)">
+
+Send
+</button>
+
+</div>
+
+
+</div>
+
+{% endfor %}
+
+{% else %}
+
+<div class="empty">
+
+<div>
+
+<h2>🎬 No videos yet</h2>
+
+<p>
+Tap Upload to add your first video.
+</p>
+
+</div>
+
+</div>
 
 {% endif %}
 
@@ -289,15 +368,58 @@ function likePost(button) {
 }
 
 
-function commentPost() {
+function openComments(button) {
 
-    const comment = prompt("Write a comment:");
+    const post = button.closest(".post");
 
-    if (comment) {
+    const box = post.querySelector(".comments-box");
 
-        alert("Comment added: " + comment);
+    box.style.display = "block";
+
+}
+
+
+function closeComments(button) {
+
+    const box = button.closest(".comments-box");
+
+    box.style.display = "none";
+
+}
+
+
+function sendComment(button) {
+
+    const box = button.closest(".comments-box");
+
+    const input = box.querySelector(".comment-input");
+
+    const list = box.querySelector(".comments-list");
+
+    const post = button.closest(".post");
+
+    const count = post.querySelector(".comment-count");
+
+    const text = input.value.trim();
+
+    if (!text) {
+
+        return;
 
     }
+
+    const comment = document.createElement("div");
+
+    comment.className = "comment-item";
+
+    comment.innerText = "@user: " + text;
+
+    list.appendChild(comment);
+
+    input.value = "";
+
+    count.innerText =
+        list.children.length;
 
 }
 
@@ -340,9 +462,10 @@ UPLOAD_HTML = """
 
 <head>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport"
+content="width=device-width, initial-scale=1">
 
-    <title>Upload</title>
+<title>Upload</title>
 
 </head>
 
@@ -350,19 +473,21 @@ UPLOAD_HTML = """
 
 <h1>📤 Upload</h1>
 
-<form action="/upload" method="post" enctype="multipart/form-data">
+<form
+action="/upload"
+method="post"
+enctype="multipart/form-data">
 
 <input
-    type="file"
-    name="file"
-    accept="image/*,video/*"
-    required
->
+type="file"
+name="file"
+accept="image/*,video/*"
+required>
 
 <br><br>
 
 <button type="submit">
-    Upload
+Upload
 </button>
 
 </form>
@@ -370,7 +495,7 @@ UPLOAD_HTML = """
 <br>
 
 <a href="/">
-    ← Back to Feed
+← Back to Feed
 </a>
 
 </body>
@@ -393,7 +518,9 @@ def upload():
 
     if request.method == "GET":
 
-        return render_template_string(UPLOAD_HTML)
+        return render_template_string(
+            UPLOAD_HTML
+        )
 
     if "file" not in request.files:
 
@@ -420,13 +547,14 @@ def upload():
         return """
         <html>
 
-        <body style="font-family:Arial;text-align:center;padding:30px">
+        <body
+        style="font-family:Arial;text-align:center;padding:30px">
 
-            <h2>✅ Upload successful!</h2>
+        <h2>✅ Upload successful!</h2>
 
-            <a href="/">
-                🎬 View Feed
-            </a>
+        <a href="/">
+        🎬 View Feed
+        </a>
 
         </body>
 
@@ -443,7 +571,9 @@ def upload():
 
 if __name__ == "__main__":
 
-    port = int(os.environ.get("PORT", 5000))
+    port = int(
+        os.environ.get("PORT", 5000)
+    )
 
     app.run(
         host="0.0.0.0",
