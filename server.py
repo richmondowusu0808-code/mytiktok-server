@@ -32,16 +32,38 @@ app.secret_key = os.environ.get(
 # DATABASE
 # =========================
 
-def init_db():
+def get_db():
 
     conn = sqlite3.connect("app.db")
 
+    conn.row_factory = sqlite3.Row
+
+    return conn
+
+
+def init_db():
+
+    conn = get_db()
+
+    # USERS TABLE
     conn.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
             bio TEXT DEFAULT ''
+        )
+    """)
+
+    # MEDIA TABLE
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS media (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            url TEXT NOT NULL,
+            media_type TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
         )
     """)
 
@@ -65,20 +87,215 @@ cloudinary.config(
 
 
 # =========================
-# TEMPORARY MEDIA
+# PROFILE HTML
 # =========================
 
-media = []
+PROFILE_HTML = """
+<!DOCTYPE html>
+<html>
 
+<head>
 
-# =========================
-# TEMPORARY PROFILE
-# =========================
+<meta name="viewport"
+content="width=device-width, initial-scale=1">
 
-profile = {
-    "username": "user",
-    "bio": "Welcome to my profile 🎬"
+<title>Profile</title>
+
+<style>
+
+body {
+    margin: 0;
+    background: #111;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
 }
+
+.profile {
+    padding: 35px 20px;
+}
+
+.avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: #333;
+    margin: 30px auto 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+}
+
+.name {
+    font-size: 25px;
+    font-weight: bold;
+}
+
+.bio {
+    color: #ccc;
+    margin: 10px 0 25px;
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 35px;
+    margin-bottom: 30px;
+}
+
+.number {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.label {
+    color: #aaa;
+    font-size: 13px;
+}
+
+.button {
+    display: inline-block;
+    padding: 12px 22px;
+    margin: 5px;
+    background: white;
+    color: black;
+    text-decoration: none;
+    border-radius: 22px;
+    font-weight: bold;
+}
+
+.edit {
+    max-width: 400px;
+    margin: 30px auto;
+    padding: 20px;
+    background: #222;
+    border-radius: 15px;
+}
+
+.input {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0 15px;
+    border: none;
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+
+textarea.input {
+    height: 90px;
+    resize: none;
+}
+
+.save {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 20px;
+    background: white;
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="profile">
+
+<div class="avatar">
+👤
+</div>
+
+<div class="name">
+@{{ profile.username }}
+</div>
+
+<div class="bio">
+{{ profile.bio }}
+</div>
+
+<div class="stats">
+
+<div>
+<div class="number">0</div>
+<div class="label">Following</div>
+</div>
+
+<div>
+<div class="number">0</div>
+<div class="label">Followers</div>
+</div>
+
+<div>
+<div class="number">{{ post_count }}</div>
+<div class="label">Posts</div>
+</div>
+
+</div>
+
+<div class="edit">
+
+<h2>✏️ Edit Profile</h2>
+
+<form action="/profile" method="post">
+
+<label>
+Username
+</label>
+
+<input
+class="input"
+type="text"
+name="username"
+value="{{ profile.username }}"
+maxlength="30"
+required>
+
+<label>
+Bio
+</label>
+
+<textarea
+class="input"
+name="bio"
+maxlength="150"
+placeholder="Tell people about yourself..."
+>{{ profile.bio }}</textarea>
+
+<button
+class="save"
+type="submit">
+
+Save Profile
+
+</button>
+
+</form>
+
+</div>
+
+<a class="button" href="/">
+🎬 Feed
+</a>
+
+<a class="button" href="/upload">
+📤 Upload
+</a>
+
+<a class="button" href="/logout">
+🚪 Logout
+</a>
+
+</div>
+
+</body>
+
+</html>
+"""
 
 
 # =========================
@@ -91,7 +308,8 @@ HTML = """
 
 <head>
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport"
+content="width=device-width, initial-scale=1">
 
 <title>MyTikTok</title>
 
@@ -289,7 +507,6 @@ video, img {
 
 </div>
 
-
 <div class="feed">
 
 {% if media %}
@@ -298,7 +515,7 @@ video, img {
 
 <div class="post">
 
-{% if item.type == "video" %}
+{% if item.media_type == "video" %}
 
 <video
 controls
@@ -318,7 +535,6 @@ alt="Uploaded image">
 
 {% endif %}
 
-
 <div class="side-buttons">
 
 <button
@@ -331,7 +547,6 @@ onclick="likePost(this)">
 0
 </div>
 
-
 <button
 class="action"
 onclick="openComments(this)">
@@ -341,7 +556,6 @@ onclick="openComments(this)">
 <div class="count comment-count">
 0
 </div>
-
 
 <button
 class="action"
@@ -355,11 +569,10 @@ Share
 
 </div>
 
-
 <div class="info">
 
 <div class="username">
-@{{ profile.username }}
+@{{ item.username }}
 </div>
 
 <div class="caption">
@@ -367,7 +580,6 @@ My new video 🎬
 </div>
 
 </div>
-
 
 <div class="comments-box">
 
@@ -418,7 +630,6 @@ Tap Upload to add your first video.
 {% endif %}
 
 </div>
-
 
 <script>
 
@@ -493,7 +704,7 @@ function sendComment(button) {
     comment.className = "comment-item";
 
     comment.innerText =
-        "@{{ profile.username }}: " + text;
+        text;
 
     list.appendChild(comment);
 
@@ -633,7 +844,6 @@ name="username"
 maxlength="30"
 required>
 
-
 <label>
 Password
 </label>
@@ -643,7 +853,6 @@ class="input"
 type="password"
 name="password"
 required>
-
 
 <button
 class="button"
@@ -821,222 +1030,6 @@ Create a new account
 
 
 # =========================
-# PROFILE HTML
-# =========================
-
-PROFILE_HTML = """
-<!DOCTYPE html>
-<html>
-
-<head>
-
-<meta name="viewport"
-content="width=device-width, initial-scale=1">
-
-<title>Profile</title>
-
-<style>
-
-body {
-    margin: 0;
-    background: #111;
-    color: white;
-    font-family: Arial, sans-serif;
-    text-align: center;
-}
-
-.profile {
-    padding: 35px 20px;
-}
-
-.avatar {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background: #333;
-    margin: 30px auto 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 50px;
-}
-
-.name {
-    font-size: 25px;
-    font-weight: bold;
-}
-
-.bio {
-    color: #ccc;
-    margin: 10px 0 25px;
-}
-
-.stats {
-    display: flex;
-    justify-content: center;
-    gap: 35px;
-    margin-bottom: 30px;
-}
-
-.number {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.label {
-    color: #aaa;
-    font-size: 13px;
-}
-
-.button {
-    display: inline-block;
-    padding: 12px 22px;
-    margin: 5px;
-    background: white;
-    color: black;
-    text-decoration: none;
-    border-radius: 22px;
-    font-weight: bold;
-}
-
-.edit {
-    max-width: 400px;
-    margin: 30px auto;
-    padding: 20px;
-    background: #222;
-    border-radius: 15px;
-}
-
-.input {
-    width: 100%;
-    padding: 12px;
-    margin: 8px 0 15px;
-    border: none;
-    border-radius: 10px;
-}
-
-textarea.input {
-    height: 90px;
-    resize: none;
-}
-
-.save {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 20px;
-    background: white;
-    color: black;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<div class="profile">
-
-<div class="avatar">
-👤
-</div>
-
-<div class="name">
-@{{ profile.username }}
-</div>
-
-<div class="bio">
-{{ profile.bio }}
-</div>
-
-
-<div class="stats">
-
-<div>
-<div class="number">0</div>
-<div class="label">Following</div>
-</div>
-
-<div>
-<div class="number">0</div>
-<div class="label">Followers</div>
-</div>
-
-<div>
-<div class="number">0</div>
-<div class="label">Likes</div>
-</div>
-
-</div>
-
-
-<div class="edit">
-
-<h2>✏️ Edit Profile</h2>
-
-<form action="/profile" method="post">
-
-<label>
-Username
-</label>
-
-<input
-class="input"
-type="text"
-name="username"
-value="{{ profile.username }}"
-maxlength="30"
-required>
-
-
-<label>
-Bio
-</label>
-
-<textarea
-class="input"
-name="bio"
-maxlength="150"
-placeholder="Tell people about yourself..."
->{{ profile.bio }}</textarea>
-
-
-<button
-class="save"
-type="submit">
-
-Save Profile
-
-</button>
-
-</form>
-
-</div>
-
-
-<a class="button" href="/">
-🎬 Feed
-</a>
-
-<a class="button" href="/upload">
-📤 Upload
-</a>
-
-<a class="button" href="/logout">
-🚪 Logout
-</a>
-
-</div>
-
-</body>
-
-</html>
-"""
-
-
-# =========================
 # UPLOAD HTML
 # =========================
 
@@ -1095,10 +1088,25 @@ Upload
 @app.route("/")
 def home():
 
+    conn = get_db()
+
+    media = conn.execute("""
+        SELECT
+            media.id,
+            media.url,
+            media.media_type,
+            users.username
+        FROM media
+        JOIN users
+        ON media.user_id = users.id
+        ORDER BY media.id DESC
+    """).fetchall()
+
+    conn.close()
+
     return render_template_string(
         HTML,
-        media=media,
-        profile=profile
+        media=media
     )
 
 
@@ -1153,7 +1161,7 @@ def signup():
 
     try:
 
-        conn = sqlite3.connect("app.db")
+        conn = get_db()
 
         cursor = conn.execute(
             """
@@ -1176,9 +1184,6 @@ def signup():
 
         session["user_id"] = user_id
         session["username"] = username
-
-        profile["username"] = username
-        profile["bio"] = "Welcome to my profile 🎬"
 
         return redirect("/profile")
 
@@ -1221,9 +1226,7 @@ def login():
             error="Please enter your username and password."
         )
 
-    conn = sqlite3.connect("app.db")
-
-    conn.row_factory = sqlite3.Row
+    conn = get_db()
 
     user = conn.execute(
         """
@@ -1256,9 +1259,6 @@ def login():
     session["user_id"] = user["id"]
     session["username"] = user["username"]
 
-    profile["username"] = user["username"]
-    profile["bio"] = user["bio"]
-
     return redirect("/profile")
 
 
@@ -1271,9 +1271,6 @@ def logout():
 
     session.clear()
 
-    profile["username"] = "user"
-    profile["bio"] = "Welcome to my profile 🎬"
-
     return redirect("/")
 
 
@@ -1284,11 +1281,45 @@ def logout():
 @app.route("/profile", methods=["GET", "POST"])
 def profile_page():
 
+    if "user_id" not in session:
+
+        return redirect("/login")
+
+    user_id = session["user_id"]
+
+    conn = get_db()
+
+    user = conn.execute(
+        """
+        SELECT *
+        FROM users
+        WHERE id = ?
+        """,
+        (user_id,)
+    ).fetchone()
+
+    post_count = conn.execute(
+        """
+        SELECT COUNT(*)
+        FROM media
+        WHERE user_id = ?
+        """,
+        (user_id,)
+    ).fetchone()[0]
+
+    conn.close()
+
+    if user is None:
+
+        session.clear()
+
+        return redirect("/login")
+
     if request.method == "POST":
 
         username = request.form.get(
             "username",
-            "user"
+            ""
         ).strip()
 
         bio = request.form.get(
@@ -1296,15 +1327,13 @@ def profile_page():
             ""
         ).strip()
 
-        if username:
+        if not username:
 
-            profile["username"] = username
+            username = user["username"]
 
-        profile["bio"] = bio
+        try:
 
-        if "user_id" in session:
-
-            conn = sqlite3.connect("app.db")
+            conn = get_db()
 
             conn.execute(
                 """
@@ -1315,7 +1344,7 @@ def profile_page():
                 (
                     username,
                     bio,
-                    session["user_id"]
+                    user_id
                 )
             )
 
@@ -1324,11 +1353,21 @@ def profile_page():
 
             session["username"] = username
 
-        return redirect("/profile")
+            return redirect("/profile")
+
+        except sqlite3.IntegrityError:
+
+            return "That username is already taken.", 400
+
+    profile = {
+        "username": user["username"],
+        "bio": user["bio"]
+    }
 
     return render_template_string(
         PROFILE_HTML,
-        profile=profile
+        profile=profile,
+        post_count=post_count
     )
 
 
@@ -1338,6 +1377,10 @@ def profile_page():
 
 @app.route("/upload", methods=["GET", "POST"])
 def upload():
+
+    if "user_id" not in session:
+
+        return redirect("/login")
 
     if request.method == "GET":
 
@@ -1362,10 +1405,23 @@ def upload():
             resource_type="auto"
         )
 
-        media.insert(0, {
-            "url": result["secure_url"],
-            "type": result["resource_type"]
-        })
+        conn = get_db()
+
+        conn.execute(
+            """
+            INSERT INTO media
+            (user_id, url, media_type)
+            VALUES (?, ?, ?)
+            """,
+            (
+                session["user_id"],
+                result["secure_url"],
+                result["resource_type"]
+            )
+        )
+
+        conn.commit()
+        conn.close()
 
         return """
         <html>
@@ -1374,6 +1430,10 @@ def upload():
         style="font-family:Arial;text-align:center;padding:30px">
 
         <h2>✅ Upload successful!</h2>
+
+        <p>Your upload is now connected to your account.</p>
+
+        <br>
 
         <a href="/">
         🎬 View Feed
