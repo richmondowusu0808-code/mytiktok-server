@@ -526,7 +526,7 @@ video, img {
 
 {% for item in media %}
 
-<div class="post">
+<div class="post" data-media-id="{{ item.id }}">
 
 {% if item.media_type == "video" %}
 
@@ -551,18 +551,20 @@ alt="Uploaded image">
 <div class="side-buttons">
 
 <button
-class="action"
-onclick="likePost(this)">
+class="action {% if item.user_liked %}liked{% endif %}"
+onclick="likePost(this)"
+type="button">
 ❤️
 </button>
 
 <div class="count">
-0
+{{ item.like_count }}
 </div>
 
 <button
 class="action"
-onclick="openComments(this)">
+onclick="openComments(this)"
+type="button">
 💬
 </button>
 
@@ -572,7 +574,8 @@ onclick="openComments(this)">
 
 <button
 class="action"
-onclick="sharePost('{{ item.url }}')">
+onclick="sharePost('{{ item.url }}')"
+type="button">
 ↗️
 </button>
 
@@ -598,7 +601,8 @@ My new video 🎬
 
 <button
 class="close-comments"
-onclick="closeComments(this)">
+onclick="closeComments(this)"
+type="button">
 ✕
 </button>
 
@@ -614,7 +618,8 @@ placeholder="Write a comment...">
 
 <button
 class="comment-send"
-onclick="sendComment(this)">
+onclick="sendComment(this)"
+type="button">
 Send
 </button>
 
@@ -646,27 +651,55 @@ Tap Upload to add your first video.
 
 <script>
 
-function likePost(button) {
+async function likePost(button) {
+
+    const post = button.closest(".post");
+
+    const mediaId = post.dataset.mediaId;
 
     const count = button.nextElementSibling;
 
-    let number = parseInt(count.innerText);
+    button.disabled = true;
 
-    if (button.classList.contains("liked")) {
+    try {
 
-        number--;
+        const response = await fetch(
+            "/like/" + mediaId,
+            {
+                method: "POST"
+            }
+        );
 
-        button.classList.remove("liked");
+        const data = await response.json();
 
-    } else {
+        if (!response.ok) {
 
-        number++;
+            alert(data.error || "Unable to like this post.");
 
-        button.classList.add("liked");
+            button.disabled = false;
+
+            return;
+        }
+
+        count.innerText = data.count;
+
+        if (data.liked) {
+
+            button.classList.add("liked");
+
+        } else {
+
+            button.classList.remove("liked");
+
+        }
+
+    } catch (error) {
+
+        alert("Something went wrong. Please try again.");
 
     }
 
-    count.innerText = number;
+    button.disabled = false;
 }
 
 
@@ -1102,6 +1135,8 @@ Upload
 @app.route("/")
 def home():
 
+    user_id = session.get("user_id")
+
     conn = get_db()
 
     media = conn.execute("""
@@ -1109,12 +1144,33 @@ def home():
             media.id,
             media.url,
             media.media_type,
-            users.username
+            users.username,
+
+            (
+                SELECT COUNT(*)
+                FROM likes
+                WHERE likes.media_id = media.id
+            ) AS like_count,
+
+            CASE
+                WHEN ? IS NOT NULL
+                AND EXISTS (
+                    SELECT 1
+                    FROM likes
+                    WHERE likes.media_id = media.id
+                    AND likes.user_id = ?
+                )
+                THEN 1
+                ELSE 0
+            END AS user_liked
+
         FROM media
+
         JOIN users
         ON media.user_id = users.id
+
         ORDER BY media.id DESC
-    """).fetchall()
+    """, (user_id, user_id)).fetchall()
 
     conn.close()
 
@@ -1122,6 +1178,104 @@ def home():
         HTML,
         media=media
     )
+
+
+# =========================
+# LIKE ROUTE
+# =========================
+
+@app.route("/like/<int:media_id>", methods=["POST"])
+def like_media(media_id):
+
+    if "user_id" not in session:
+
+        return {
+            "error": "Please login first."
+        }, 401
+
+    user_id = session["user_id"]
+
+    conn = get_db()
+
+    media = conn.execute(
+        """
+        SELECT id
+        FROM media
+        WHERE id = ?
+        """,
+        (media_id,)
+    ).fetchone()
+
+    if media is None:
+
+        conn.close()
+
+        return {
+            "error": "Post not found."
+        }, 404
+
+    existing_like = conn.execute(
+        """
+        SELECT id
+        FROM likes
+        WHERE user_id = ?
+        AND media_id = ?
+        """,
+        (
+            user_id,
+            media_id
+        )
+    ).fetchone()
+
+    if existing_like:
+
+        conn.execute(
+            """
+            DELETE FROM likes
+            WHERE user_id = ?
+            AND media_id = ?
+            """,
+            (
+                user_id,
+                media_id
+            )
+        )
+
+        liked = False
+
+    else:
+
+        conn.execute(
+            """
+            INSERT INTO likes
+            (user_id, media_id)
+            VALUES (?, ?)
+            """,
+            (
+                user_id,
+                media_id
+            )
+        )
+
+        liked = True
+
+    conn.commit()
+
+    like_count = conn.execute(
+        """
+        SELECT COUNT(*)
+        FROM likes
+        WHERE media_id = ?
+        """,
+        (media_id,)
+    ).fetchone()[0]
+
+    conn.close()
+
+    return {
+        "liked": liked,
+        "count": like_count
+    }
 
 
 # =========================
