@@ -4,18 +4,8 @@ import sqlite3
 import cloudinary
 import cloudinary.uploader
 
-from flask import (
-    Flask,
-    request,
-    render_template_string,
-    redirect,
-    session
-)
-
-from werkzeug.security import (
-    generate_password_hash,
-    check_password_hash
-)
+from flask import Flask, request, render_template_string, redirect, session
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 app = Flask(__name__)
@@ -25,25 +15,20 @@ app.secret_key = os.environ.get(
     "temporary-secret-key-change-later"
 )
 
-
-# --------------------------------------------------
-# DATABASE
-# --------------------------------------------------
-
 DATABASE = "app.db"
 
 
+# =========================
+# DATABASE
+# =========================
+
 def get_db():
-
     conn = sqlite3.connect(DATABASE)
-
     conn.row_factory = sqlite3.Row
-
     return conn
 
 
 def init_db():
-
     conn = get_db()
 
     conn.execute("""
@@ -94,203 +79,39 @@ def init_db():
     """)
 
     conn.commit()
-
     conn.close()
 
 
 init_db()
 
 
-# --------------------------------------------------
+# =========================
 # CLOUDINARY
-# --------------------------------------------------
+# =========================
 
 cloudinary.config(
-    cloud_name=os.environ.get(
-        "CLOUDINARY_CLOUD_NAME"
-    ),
-    api_key=os.environ.get(
-        "CLOUDINARY_API_KEY"
-    ),
-    api_secret=os.environ.get(
-        "CLOUDINARY_API_SECRET"
-    )
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET")
 )
 
 
-# --------------------------------------------------
-# PROFILE HTML
-# --------------------------------------------------
-
-PROFILE_HTML = """
-<!DOCTYPE html>
-<html>
-
-<head>
-
-<meta name="viewport"
-content="width=device-width, initial-scale=1">
-
-<title>My Profile</title>
-
-<style>
-
-body {
-    margin: 0;
-    background: #000;
-    color: #fff;
-    font-family: Arial, sans-serif;
-}
-
-.profile {
-    padding: 30px 20px;
-    text-align: center;
-}
-
-.username {
-    font-size: 28px;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.bio {
-    color: #ccc;
-    margin-bottom: 25px;
-}
-
-.stats {
-    display: flex;
-    justify-content: center;
-    gap: 35px;
-    margin-bottom: 25px;
-}
-
-.stat {
-    text-align: center;
-}
-
-.stat-number {
-    font-size: 22px;
-    font-weight: bold;
-}
-
-.stat-label {
-    color: #aaa;
-    font-size: 14px;
-}
-
-.button {
-    display: inline-block;
-    padding: 12px 25px;
-    margin: 5px;
-    background: #ff0050;
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    font-weight: bold;
-}
-
-.logout {
-    background: #333;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<div class="profile">
-
-    <div class="username">
-        @{{ user["username"] }}
-    </div>
-
-    <div class="bio">
-        {{ user["bio"] }}
-    </div>
-
-    <div class="stats">
-
-        <div class="stat">
-
-            <div class="stat-number">
-                {{ following_count }}
-            </div>
-
-            <div class="stat-label">
-                Following
-            </div>
-
-        </div>
-
-        <div class="stat">
-
-            <div class="stat-number">
-                {{ follower_count }}
-            </div>
-
-            <div class="stat-label">
-                Followers
-            </div>
-
-        </div>
-
-        <div class="stat">
-
-            <div class="stat-number">
-                {{ post_count }}
-            </div>
-
-            <div class="stat-label">
-                Posts
-            </div>
-
-        </div>
-
-    </div>
-
-    <a class="button" href="/upload">
-        Upload
-    </a>
-
-    <a class="button" href="/">
-        Feed
-    </a>
-
-    <a class="button logout" href="/logout">
-        Logout
-    </a>
-
-</div>
-
-</body>
-
-</html>
-"""
-
-
-# --------------------------------------------------
-# PUBLIC PROFILE HTML
-# --------------------------------------------------
+# =========================
+# PUBLIC PROFILE
+# =========================
 
 PUBLIC_PROFILE_HTML = """
 <!DOCTYPE html>
 <html>
-
 <head>
-
-<meta name="viewport"
-content="width=device-width, initial-scale=1">
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ user["username"] }}</title>
 
 <style>
-
 body {
     margin: 0;
     background: #000;
-    color: #fff;
+    color: white;
     font-family: Arial, sans-serif;
 }
 
@@ -315,10 +136,6 @@ body {
     justify-content: center;
     gap: 35px;
     margin-bottom: 25px;
-}
-
-.stat {
-    text-align: center;
 }
 
 .stat-number {
@@ -339,10 +156,9 @@ body {
     border-radius: 8px;
     font-size: 16px;
     font-weight: bold;
-    cursor: pointer;
 }
 
-.follow-button.following {
+.following {
     background: #333;
 }
 
@@ -350,11 +166,8 @@ body {
     display: inline-block;
     margin-top: 20px;
     color: white;
-    text-decoration: none;
 }
-
 </style>
-
 </head>
 
 <body>
@@ -371,98 +184,70 @@ body {
 
     <div class="stats">
 
-        <div class="stat">
-
-            <div
-                class="stat-number"
-                id="followingCount">
-
+        <div>
+            <div class="stat-number">
                 {{ following_count }}
-
             </div>
-
             <div class="stat-label">
                 Following
             </div>
-
         </div>
 
-        <div class="stat">
-
-            <div
-                class="stat-number"
-                id="followerCount">
-
+        <div>
+            <div class="stat-number" id="followerCount">
                 {{ follower_count }}
-
             </div>
-
             <div class="stat-label">
                 Followers
             </div>
-
         </div>
 
-        <div class="stat">
-
+        <div>
             <div class="stat-number">
                 {{ post_count }}
             </div>
-
             <div class="stat-label">
                 Posts
             </div>
-
         </div>
 
     </div>
 
-
     {% if current_user_id and current_user_id != user["id"] %}
 
-        <button
-            id="followButton"
-            class="follow-button {% if is_following %}following{% endif %}"
-            onclick="toggleFollow()">
+    <button
+        id="followButton"
+        class="follow-button {% if is_following %}following{% endif %}"
+        onclick="toggleFollow()">
 
-            {% if is_following %}
-                Following
-            {% else %}
-                Follow
-            {% endif %}
+        {% if is_following %}
+        Following
+        {% else %}
+        Follow
+        {% endif %}
 
-        </button>
+    </button>
 
     {% elif not current_user_id %}
 
-        <a href="/login">
-
-            <button class="follow-button">
-                Login to Follow
-            </button>
-
-        </a>
+    <a href="/login">
+        <button class="follow-button">
+            Login to Follow
+        </button>
+    </a>
 
     {% endif %}
 
-
     <br>
 
-    <a
-        class="back-button"
-        href="/">
-
+    <a class="back-button" href="/">
         ← Back to Feed
-
     </a>
 
 </div>
 
-
 <script>
-
 async function toggleFollow() {
-
     const response = await fetch(
         "/follow/{{ user['id'] }}",
         {
@@ -474,44 +259,161 @@ async function toggleFollow() {
         return;
     }
 
-    const data =
-        await response.json();
+    const data = await response.json();
 
-    const button =
-        document.getElementById(
-            "followButton"
-        );
+    const button = document.getElementById(
+        "followButton"
+    );
 
-    const followerCount =
-        document.getElementById(
-            "followerCount"
-        );
+    const count = document.getElementById(
+        "followerCount"
+    );
 
-    button.innerText =
-        data.following
-            ? "Following"
-            : "Follow";
+    button.innerText = data.following
+        ? "Following"
+        : "Follow";
 
     button.classList.toggle(
         "following",
         data.following
     );
 
-    followerCount.innerText =
-        data.follower_count;
+    count.innerText = data.follower_count;
 }
-
 </script>
 
 </body>
-
 </html>
 """
 
 
-# --------------------------------------------------
-# MAIN FEED HTML
-# --------------------------------------------------
+# =========================
+# MY PROFILE
+# =========================
+
+PROFILE_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+    margin: 0;
+    background: #000;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+.profile {
+    padding: 30px 20px;
+}
+
+.username {
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.bio {
+    color: #ccc;
+    margin: 15px 0 25px;
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 35px;
+    margin-bottom: 25px;
+}
+
+.number {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.label {
+    color: #aaa;
+    font-size: 14px;
+}
+
+.button {
+    display: inline-block;
+    padding: 12px 20px;
+    margin: 5px;
+    background: #ff0050;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="profile">
+
+    <div class="username">
+        @{{ user["username"] }}
+    </div>
+
+    <div class="bio">
+        {{ user["bio"] }}
+    </div>
+
+    <div class="stats">
+
+        <div>
+            <div class="number">
+                {{ following_count }}
+            </div>
+            <div class="label">
+                Following
+            </div>
+        </div>
+
+        <div>
+            <div class="number">
+                {{ follower_count }}
+            </div>
+            <div class="label">
+                Followers
+            </div>
+        </div>
+
+        <div>
+            <div class="number">
+                {{ post_count }}
+            </div>
+            <div class="label">
+                Posts
+            </div>
+        </div>
+
+    </div>
+
+    <a class="button" href="/">
+        Feed
+    </a>
+
+    <a class="button" href="/upload">
+        Upload
+    </a>
+
+    <a class="button" href="/logout">
+        Logout
+    </a>
+
+</div>
+
+</body>
+</html>
+"""
+
+
+# =========================
+# FEED
+# =========================
 
 HTML = """
 <!DOCTYPE html>
@@ -535,7 +437,7 @@ body {
     margin: 0;
     padding: 0;
     background: #000;
-    color: #fff;
+    color: white;
     font-family: Arial, sans-serif;
 }
 
@@ -550,9 +452,6 @@ body {
     height: 100vh;
     scroll-snap-align: start;
     background: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .media {
@@ -566,13 +465,11 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 25px 20px;
-    padding-bottom: 35px;
-    background:
-        linear-gradient(
-            transparent,
-            rgba(0,0,0,0.8)
-        );
+    padding: 25px 20px 40px;
+    background: linear-gradient(
+        transparent,
+        rgba(0, 0, 0, 0.85)
+    );
 }
 
 .username {
@@ -586,28 +483,43 @@ body {
 
 .actions {
     display: flex;
-    gap: 20px;
     align-items: center;
+    gap: 12px;
 }
 
 .action-button {
-    background: rgba(0,0,0,0.55);
-    border: none;
-    color: white;
-    border-radius: 50%;
     width: 55px;
     height: 55px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
     font-size: 24px;
-    cursor: pointer;
 }
 
-.like-button.liked {
+.liked {
     color: #ff0050;
 }
 
 .like-count {
-    font-size: 14px;
-    margin-left: -12px;
+    margin-right: 10px;
+}
+
+.top-buttons {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 500;
+}
+
+.top-button {
+    display: inline-block;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 14px;
+    margin-left: 5px;
+    border-radius: 8px;
+    text-decoration: none;
 }
 
 .comment-box {
@@ -636,23 +548,18 @@ body {
     align-items: center;
     background: #111;
     font-size: 20px;
-    margin-bottom: 20px;
     padding-bottom: 10px;
 }
 
 .close-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #ff0050;
-    color: white;
-    border: none;
-    border-radius: 50%;
     width: 45px;
     height: 45px;
+    border: none;
+    border-radius: 50%;
+    background: #ff0050;
+    color: white;
     font-size: 24px;
     font-weight: bold;
-    cursor: pointer;
 }
 
 .comment {
@@ -672,7 +579,6 @@ body {
 .comment-form {
     display: flex;
     gap: 10px;
-    margin-top: 15px;
     position: sticky;
     bottom: 0;
     background: #111;
@@ -682,8 +588,8 @@ body {
 .comment-input {
     flex: 1;
     padding: 12px;
-    border: none;
     border-radius: 8px;
+    border: none;
 }
 
 .comment-submit {
@@ -692,24 +598,6 @@ body {
     border: none;
     border-radius: 8px;
     padding: 12px 18px;
-    font-weight: bold;
-}
-
-.top-buttons {
-    position: fixed;
-    top: 15px;
-    right: 15px;
-    z-index: 500;
-}
-
-.top-button {
-    display: inline-block;
-    background: rgba(0,0,0,0.65);
-    color: white;
-    padding: 10px 14px;
-    margin-left: 5px;
-    border-radius: 8px;
-    text-decoration: none;
 }
 
 </style>
@@ -718,121 +606,105 @@ body {
 
 <body>
 
-
 <div class="top-buttons">
 
-    {% if session.get("user_id") %}
+{% if session.get("user_id") %}
 
-        <a
-            class="top-button"
-            href="/profile">
+<a class="top-button" href="/profile">
+Profile
+</a>
 
-            Profile
+<a class="top-button" href="/upload">
+Upload
+</a>
 
-        </a>
+{% else %}
 
-        <a
-            class="top-button"
-            href="/upload">
+<a class="top-button" href="/login">
+Login
+</a>
 
-            Upload
-
-        </a>
-
-    {% else %}
-
-        <a
-            class="top-button"
-            href="/login">
-
-            Login
-
-        </a>
-
-    {% endif %}
+{% endif %}
 
 </div>
 
 
 <div class="feed">
 
-
 {% for item in media %}
 
 <div class="video-card">
 
+{% if item["media_type"] == "video" %}
 
-    {% if item["media_type"] == "video" %}
+<video
+    class="media"
+    src="{{ item['url'] }}"
+    autoplay
+    muted
+    loop
+    playsinline>
+</video>
 
-        <video
-            class="media"
-            src="{{ item['url'] }}"
-            autoplay
-            muted
-            loop
-            playsinline>
-        </video>
+{% else %}
 
-    {% else %}
+<img
+    class="media"
+    src="{{ item['url'] }}">
 
-        <img
-            class="media"
-            src="{{ item['url'] }}">
-
-    {% endif %}
-
-
-    <div class="overlay">
-
-        <a
-            class="username"
-            href="/user/{{ item['username'] }}">
-
-            @{{ item["username"] }}
-
-        </a>
+{% endif %}
 
 
-        <div class="actions">
+<div class="overlay">
+
+<a
+    class="username"
+    href="/user/{{ item['username'] }}">
+
+    @{{ item["username"] }}
+
+</a>
 
 
-            <button
-                type="button"
-                class="action-button like-button {% if item['liked'] %}liked{% endif %}"
-                onclick="toggleLike({{ item['id'] }}, this)">
+<div class="actions">
 
-                ♥
-                
-            </button>
+<button
+    class="action-button {% if item['liked'] %}liked{% endif %}"
+    onclick="toggleLike(
+        {{ item['id'] }},
+        this
+    )">
 
+    ♥
+    
+</button>
 
-            <span
-                class="like-count"
-                id="like-count-{{ item['id'] }}">
+<span
+    class="like-count"
+    id="like-count-{{ item['id'] }}">
 
-                {{ item["like_count"] }}
+    {{ item["like_count"] }}
 
-            </span>
-
-
-            <button
-                type="button"
-                class="action-button"
-                onclick="openComments({{ item['id'] }})">
-
-                💬
-
-            </button>
+</span>
 
 
-        </div>
+<button
+    class="action-button"
+    onclick="openComments(
+        {{ item['id'] }}
+    )">
 
-    </div>
+    💬
+
+</button>
+
+</div>
+
+</div>
 
 </div>
 
 {% endfor %}
-
 
 </div>
 
@@ -841,13 +713,11 @@ body {
     id="commentBox"
     class="comment-box">
 
-
     <div class="comment-header">
 
         <span>
             Comments
         </span>
-
 
         <button
             type="button"
@@ -860,48 +730,42 @@ body {
 
     </div>
 
-
     <div id="commentsList"></div>
 
 
-    {% if session.get("user_id") %}
+{% if session.get("user_id") %}
 
-    <form
-        class="comment-form"
-        onsubmit="submitComment(event)">
+<form
+    class="comment-form"
+    onsubmit="submitComment(event)">
 
-        <input
-            id="commentInput"
-            class="comment-input"
-            type="text"
-            placeholder="Add a comment..."
-            maxlength="500"
-            required>
+    <input
+        id="commentInput"
+        class="comment-input"
+        type="text"
+        maxlength="500"
+        placeholder="Add a comment..."
+        required>
 
-        <button
-            class="comment-submit"
-            type="submit">
+    <button
+        class="comment-submit"
+        type="submit">
 
-            Post
+        Post
 
-        </button>
+    </button>
 
-    </form>
+</form>
 
-    {% else %}
+{% else %}
 
-    <p>
-        <a
-            href="/login"
-            style="color:#ff0050;">
+<p>
+    <a href="/login" style="color:#ff0050;">
+        Login to comment
+    </a>
+</p>
 
-            Login to comment
-
-        </a>
-    </p>
-
-    {% endif %}
-
+{% endif %}
 
 </div>
 
@@ -911,33 +775,24 @@ body {
 let currentCommentMediaId = null;
 
 
-async function toggleLike(
-    mediaId,
-    button
-) {
+async function toggleLike(mediaId, button) {
 
-    const response =
-        await fetch(
-            "/like/" + mediaId,
-            {
-                method: "POST"
-            }
-        );
+    const response = await fetch(
+        "/like/" + mediaId,
+        {
+            method: "POST"
+        }
+    );
 
     if (!response.ok) {
         return;
     }
 
-    const data =
-        await response.json();
+    const data = await response.json();
 
-    const count =
-        document.getElementById(
-            "like-count-" + mediaId
-        );
-
-    count.innerText =
-        data.like_count;
+    document.getElementById(
+        "like-count-" + mediaId
+    ).innerText = data.like_count;
 
     button.classList.toggle(
         "liked",
@@ -946,205 +801,138 @@ async function toggleLike(
 }
 
 
-async function openComments(
-    mediaId
-) {
+async function openComments(mediaId) {
 
-    currentCommentMediaId =
-        mediaId;
+    currentCommentMediaId = mediaId;
 
-    const box =
-        document.getElementById(
-            "commentBox"
-        );
+    document.getElementById(
+        "commentBox"
+    ).classList.add("open");
 
-    box.classList.add("open");
+    const list = document.getElementById(
+        "commentsList"
+    );
 
-    const list =
-        document.getElementById(
-            "commentsList"
-        );
+    list.innerHTML = "<p>Loading...</p>";
 
-    list.innerHTML =
-        "<p>Loading...</p>";
-
-
-    const response =
-        await fetch(
-            "/comments/" + mediaId
-        );
-
+    const response = await fetch(
+        "/comments/" + mediaId
+    );
 
     if (!response.ok) {
-
         list.innerHTML =
             "<p>Could not load comments.</p>";
-
         return;
     }
 
-
-    const comments =
-        await response.json();
-
+    const comments = await response.json();
 
     list.innerHTML = "";
 
-
     if (comments.length === 0) {
-
         list.innerHTML =
             "<p>No comments yet.</p>";
-
         return;
     }
 
-
-    comments.forEach(
-        function(comment) {
-
-            addCommentToList(
-                comment.username,
-                comment.text
-            );
-
-        }
-    );
+    comments.forEach(function(comment) {
+        addCommentToList(
+            comment.username,
+            comment.text
+        );
+    });
 }
 
 
 function closeComments() {
 
-    const box =
-        document.getElementById(
-            "commentBox"
-        );
+    document.getElementById(
+        "commentBox"
+    ).classList.remove("open");
 
-    box.classList.remove("open");
-
-    currentCommentMediaId =
-        null;
+    currentCommentMediaId = null;
 }
 
 
 document.addEventListener(
     "keydown",
     function(event) {
-
         if (event.key === "Escape") {
-
             closeComments();
-
         }
-
     }
 );
 
 
-function addCommentToList(
-    username,
-    text
-) {
+function addCommentToList(username, text) {
 
-    const list =
-        document.getElementById(
-            "commentsList"
-        );
+    const list = document.getElementById(
+        "commentsList"
+    );
 
+    const div = document.createElement("div");
 
-    const div =
-        document.createElement("div");
-
-    div.className =
-        "comment";
+    div.className = "comment";
 
 
     const userDiv =
         document.createElement("div");
 
-    userDiv.className =
-        "comment-user";
-
-    userDiv.innerText =
-        "@" + username;
+    userDiv.className = "comment-user";
+    userDiv.innerText = "@" + username;
 
 
     const textDiv =
         document.createElement("div");
 
-    textDiv.className =
-        "comment-text";
-
-    textDiv.innerText =
-        text;
+    textDiv.className = "comment-text";
+    textDiv.innerText = text;
 
 
     div.appendChild(userDiv);
-
     div.appendChild(textDiv);
 
     list.appendChild(div);
 }
 
 
-async function submitComment(
-    event
-) {
+async function submitComment(event) {
 
     event.preventDefault();
-
 
     if (!currentCommentMediaId) {
         return;
     }
 
+    const input = document.getElementById(
+        "commentInput"
+    );
 
-    const input =
-        document.getElementById(
-            "commentInput"
-        );
-
-
-    const text =
-        input.value.trim();
-
+    const text = input.value.trim();
 
     if (!text) {
         return;
     }
 
+    const formData = new FormData();
 
-    const formData =
-        new FormData();
+    formData.append("text", text);
 
-    formData.append(
-        "text",
-        text
+    const response = await fetch(
+        "/comment/" + currentCommentMediaId,
+        {
+            method: "POST",
+            body: formData
+        }
     );
-
-
-    const response =
-        await fetch(
-            "/comment/" +
-            currentCommentMediaId,
-            {
-                method: "POST",
-                body: formData
-            }
-        );
-
 
     if (!response.ok) {
         return;
     }
 
-
-    const data =
-        await response.json();
-
+    const data = await response.json();
 
     input.value = "";
-
 
     addCommentToList(
         data.username,
@@ -1154,25 +942,21 @@ async function submitComment(
 
 </script>
 
-
 </body>
-
 </html>
 """
 
 
-# --------------------------------------------------
-# HOME / FEED
-# --------------------------------------------------
+# =========================
+# HOME
+# =========================
 
 @app.route("/")
 def home():
 
     conn = get_db()
 
-    current_user_id =
-        session.get("user_id")
-
+    current_user_id = session.get("user_id")
 
     rows = conn.execute("""
         SELECT
@@ -1186,9 +970,7 @@ def home():
         ORDER BY media.id DESC
     """).fetchall()
 
-
     media = []
-
 
     for item in rows:
 
@@ -1198,9 +980,7 @@ def home():
             WHERE media_id = ?
         """, (item["id"],)).fetchone()[0]
 
-
         liked = False
-
 
         if current_user_id:
 
@@ -1216,7 +996,6 @@ def home():
 
             liked = existing is not None
 
-
         media.append({
             "id": item["id"],
             "url": item["url"],
@@ -1226,9 +1005,7 @@ def home():
             "liked": liked
         })
 
-
     conn.close()
-
 
     return render_template_string(
         HTML,
@@ -1236,9 +1013,9 @@ def home():
     )
 
 
-# --------------------------------------------------
-# LIKE / UNLIKE
-# --------------------------------------------------
+# =========================
+# LIKE
+# =========================
 
 @app.route(
     "/like/<int:media_id>",
@@ -1247,18 +1024,11 @@ def home():
 def like_media(media_id):
 
     if "user_id" not in session:
+        return {"error": "Login required"}, 401
 
-        return {
-            "error": "Login required"
-        }, 401
-
-
-    user_id =
-        session["user_id"]
-
+    user_id = session["user_id"]
 
     conn = get_db()
-
 
     existing = conn.execute("""
         SELECT id
@@ -1269,7 +1039,6 @@ def like_media(media_id):
         user_id,
         media_id
     )).fetchone()
-
 
     if existing:
 
@@ -1299,18 +1068,14 @@ def like_media(media_id):
 
         liked = True
 
-
     like_count = conn.execute("""
         SELECT COUNT(*)
         FROM likes
         WHERE media_id = ?
     """, (media_id,)).fetchone()[0]
 
-
     conn.commit()
-
     conn.close()
-
 
     return {
         "liked": liked,
@@ -1318,9 +1083,41 @@ def like_media(media_id):
     }
 
 
-# --------------------------------------------------
-# ADD COMMENT
-# --------------------------------------------------
+# =========================
+# COMMENTS
+# =========================
+
+@app.route(
+    "/comments/<int:media_id>"
+)
+def get_comments(media_id):
+
+    conn = get_db()
+
+    comments = conn.execute("""
+        SELECT
+            comments.text,
+            users.username
+        FROM comments
+        JOIN users
+            ON users.id = comments.user_id
+        WHERE comments.media_id = ?
+        ORDER BY comments.id ASC
+    """, (media_id,)).fetchall()
+
+    result = []
+
+    for comment in comments:
+
+        result.append({
+            "username": comment["username"],
+            "text": comment["text"]
+        })
+
+    conn.close()
+
+    return result
+
 
 @app.route(
     "/comment/<int:media_id>",
@@ -1329,39 +1126,26 @@ def like_media(media_id):
 def add_comment(media_id):
 
     if "user_id" not in session:
+        return {"error": "Login required"}, 401
 
-        return {
-            "error": "Login required"
-        }, 401
-
-
-    text =
-        request.form.get(
-            "text",
-            ""
-        ).strip()
-
+    text = request.form.get(
+        "text",
+        ""
+    ).strip()
 
     if not text:
-
         return {
             "error": "Comment cannot be empty"
         }, 400
 
-
     if len(text) > 500:
-
         return {
             "error": "Comment is too long"
         }, 400
 
-
-    user_id =
-        session["user_id"]
-
+    user_id = session["user_id"]
 
     conn = get_db()
-
 
     media = conn.execute("""
         SELECT id
@@ -1369,15 +1153,11 @@ def add_comment(media_id):
         WHERE id = ?
     """, (media_id,)).fetchone()
 
-
     if not media:
-
         conn.close()
-
         return {
             "error": "Media not found"
         }, 404
-
 
     conn.execute("""
         INSERT INTO comments (
@@ -1392,72 +1172,24 @@ def add_comment(media_id):
         text
     ))
 
-
-    username = conn.execute("""
+    user = conn.execute("""
         SELECT username
         FROM users
         WHERE id = ?
-    """, (user_id,)).fetchone()["username"]
-
+    """, (user_id,)).fetchone()
 
     conn.commit()
-
     conn.close()
 
-
     return {
-        "username": username,
+        "username": user["username"],
         "text": text
     }
 
 
-# --------------------------------------------------
-# GET COMMENTS
-# --------------------------------------------------
-
-@app.route(
-    "/comments/<int:media_id>"
-)
-def get_comments(media_id):
-
-    conn = get_db()
-
-
-    comments = conn.execute("""
-        SELECT
-            comments.text,
-            users.username
-        FROM comments
-        JOIN users
-            ON users.id = comments.user_id
-        WHERE comments.media_id = ?
-        ORDER BY comments.id ASC
-    """, (media_id,)).fetchall()
-
-
-    result = []
-
-
-    for comment in comments:
-
-        result.append({
-            "username":
-                comment["username"],
-
-            "text":
-                comment["text"]
-        })
-
-
-    conn.close()
-
-
-    return result
-
-
-# --------------------------------------------------
-# SIGNUP
-# --------------------------------------------------
+# =========================
+# SIGN UP
+# =========================
 
 @app.route(
     "/signup",
@@ -1467,36 +1199,24 @@ def signup():
 
     if request.method == "POST":
 
-        username =
-            request.form.get(
-                "username",
-                ""
-            ).strip()
+        username = request.form.get(
+            "username",
+            ""
+        ).strip()
 
-        password =
-            request.form.get(
-                "password",
-                ""
-            )
-
+        password = request.form.get(
+            "password",
+            ""
+        )
 
         if not username or not password:
+            return "Username and password required."
 
-            return """
-            Username and password required.
-            <br>
-            <a href="/signup">Back</a>
-            """
-
-
-        hashed_password =
-            generate_password_hash(
-                password
-            )
-
+        hashed_password = generate_password_hash(
+            password
+        )
 
         conn = get_db()
-
 
         try:
 
@@ -1513,80 +1233,55 @@ def signup():
 
             conn.commit()
 
-            user_id =
-                cursor.lastrowid
-
+            user_id = cursor.lastrowid
 
         except sqlite3.IntegrityError:
 
             conn.close()
 
-            return """
-            Username already exists.
-            <br>
-            <a href="/signup">Back</a>
-            """
-
+            return "Username already exists."
 
         conn.close()
 
-
-        session["user_id"] =
-            user_id
-
+        session["user_id"] = user_id
 
         return redirect("/")
 
-
     return """
     <html>
-    <head>
-    <meta name="viewport"
-    content="width=device-width, initial-scale=1">
-    </head>
-
-    <body style="
-        background:#000;
-        color:#fff;
-        font-family:Arial;
-        padding:30px;
-    ">
+    <body style="background:#000;color:#fff;font-family:Arial;padding:30px">
 
     <h1>Sign Up</h1>
 
     <form method="POST">
 
-        <input
-            name="username"
-            placeholder="Username"
-            required
-            style="padding:12px;display:block;margin:10px 0;">
+    <input
+        name="username"
+        placeholder="Username"
+        required
+        style="padding:12px">
 
-        <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            required
-            style="padding:12px;display:block;margin:10px 0;">
+    <br><br>
 
-        <button
-            type="submit"
-            style="padding:12px 20px;">
+    <input
+        name="password"
+        type="password"
+        placeholder="Password"
+        required
+        style="padding:12px">
 
-            Sign Up
+    <br><br>
 
-        </button>
+    <button type="submit">
+        Sign Up
+    </button>
 
     </form>
 
     <br>
 
-    <a
-        href="/login"
-        style="color:white;">
-
+    <a href="/login" style="color:white">
         Already have an account? Login
-
     </a>
 
     </body>
@@ -1594,9 +1289,9 @@ def signup():
     """
 
 
-# --------------------------------------------------
+# =========================
 # LOGIN
-# --------------------------------------------------
+# =========================
 
 @app.route(
     "/login",
@@ -1606,21 +1301,17 @@ def login():
 
     if request.method == "POST":
 
-        username =
-            request.form.get(
-                "username",
-                ""
-            ).strip()
+        username = request.form.get(
+            "username",
+            ""
+        ).strip()
 
-        password =
-            request.form.get(
-                "password",
-                ""
-            )
-
+        password = request.form.get(
+            "password",
+            ""
+        )
 
         conn = get_db()
-
 
         user = conn.execute("""
             SELECT *
@@ -1628,77 +1319,54 @@ def login():
             WHERE username = ?
         """, (username,)).fetchone()
 
-
         conn.close()
-
 
         if user and check_password_hash(
             user["password"],
             password
         ):
 
-            session["user_id"] =
-                user["id"]
+            session["user_id"] = user["id"]
 
             return redirect("/")
 
-
-        return """
-        Invalid username or password.
-        <br>
-        <a href="/login">Back</a>
-        """
-
+        return "Invalid username or password."
 
     return """
     <html>
-    <head>
-    <meta name="viewport"
-    content="width=device-width, initial-scale=1">
-    </head>
-
-    <body style="
-        background:#000;
-        color:#fff;
-        font-family:Arial;
-        padding:30px;
-    ">
+    <body style="background:#000;color:#fff;font-family:Arial;padding:30px">
 
     <h1>Login</h1>
 
     <form method="POST">
 
-        <input
-            name="username"
-            placeholder="Username"
-            required
-            style="padding:12px;display:block;margin:10px 0;">
+    <input
+        name="username"
+        placeholder="Username"
+        required
+        style="padding:12px">
 
-        <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            required
-            style="padding:12px;display:block;margin:10px 0;">
+    <br><br>
 
-        <button
-            type="submit"
-            style="padding:12px 20px;">
+    <input
+        name="password"
+        type="password"
+        placeholder="Password"
+        required
+        style="padding:12px">
 
-            Login
+    <br><br>
 
-        </button>
+    <button type="submit">
+        Login
+    </button>
 
     </form>
 
     <br>
 
-    <a
-        href="/signup"
-        style="color:white;">
-
+    <a href="/signup" style="color:white">
         Create account
-
     </a>
 
     </body>
@@ -1706,9 +1374,9 @@ def login():
     """
 
 
-# --------------------------------------------------
+# =========================
 # LOGOUT
-# --------------------------------------------------
+# =========================
 
 @app.route("/logout")
 def logout():
@@ -1718,24 +1386,19 @@ def logout():
     return redirect("/")
 
 
-# --------------------------------------------------
+# =========================
 # MY PROFILE
-# --------------------------------------------------
+# =========================
 
 @app.route("/profile")
 def profile():
 
     if "user_id" not in session:
-
         return redirect("/login")
 
-
-    user_id =
-        session["user_id"]
-
+    user_id = session["user_id"]
 
     conn = get_db()
-
 
     user = conn.execute("""
         SELECT *
@@ -1743,13 +1406,11 @@ def profile():
         WHERE id = ?
     """, (user_id,)).fetchone()
 
-
     post_count = conn.execute("""
         SELECT COUNT(*)
         FROM media
         WHERE user_id = ?
     """, (user_id,)).fetchone()[0]
-
 
     follower_count = conn.execute("""
         SELECT COUNT(*)
@@ -1757,16 +1418,13 @@ def profile():
         WHERE following_id = ?
     """, (user_id,)).fetchone()[0]
 
-
     following_count = conn.execute("""
         SELECT COUNT(*)
         FROM followers
         WHERE follower_id = ?
     """, (user_id,)).fetchone()[0]
 
-
     conn.close()
-
 
     return render_template_string(
         PROFILE_HTML,
@@ -1777,17 +1435,14 @@ def profile():
     )
 
 
-# --------------------------------------------------
-# PUBLIC USER PROFILE
-# --------------------------------------------------
+# =========================
+# PUBLIC PROFILE
+# =========================
 
-@app.route(
-    "/user/<username>"
-)
+@app.route("/user/<username>")
 def public_profile(username):
 
     conn = get_db()
-
 
     user = conn.execute("""
         SELECT *
@@ -1795,17 +1450,13 @@ def public_profile(username):
         WHERE username = ?
     """, (username,)).fetchone()
 
-
     if not user:
 
         conn.close()
 
         return "User not found", 404
 
-
-    user_id =
-        user["id"]
-
+    user_id = user["id"]
 
     post_count = conn.execute("""
         SELECT COUNT(*)
@@ -1813,13 +1464,11 @@ def public_profile(username):
         WHERE user_id = ?
     """, (user_id,)).fetchone()[0]
 
-
     follower_count = conn.execute("""
         SELECT COUNT(*)
         FROM followers
         WHERE following_id = ?
     """, (user_id,)).fetchone()[0]
-
 
     following_count = conn.execute("""
         SELECT COUNT(*)
@@ -1827,18 +1476,11 @@ def public_profile(username):
         WHERE follower_id = ?
     """, (user_id,)).fetchone()[0]
 
-
-    current_user_id =
-        session.get("user_id")
-
+    current_user_id = session.get("user_id")
 
     is_following = False
 
-
-    if (
-        current_user_id
-        and current_user_id != user_id
-    ):
+    if current_user_id and current_user_id != user_id:
 
         existing = conn.execute("""
             SELECT id
@@ -1850,13 +1492,9 @@ def public_profile(username):
             user_id
         )).fetchone()
 
-
-        is_following =
-            existing is not None
-
+        is_following = existing is not None
 
     conn.close()
-
 
     return render_template_string(
         PUBLIC_PROFILE_HTML,
@@ -1869,9 +1507,9 @@ def public_profile(username):
     )
 
 
-# --------------------------------------------------
+# =========================
 # FOLLOW / UNFOLLOW
-# --------------------------------------------------
+# =========================
 
 @app.route(
     "/follow/<int:user_id>",
@@ -1880,33 +1518,22 @@ def public_profile(username):
 def follow_user(user_id):
 
     if "user_id" not in session:
+        return {"error": "Login required"}, 401
 
-        return {
-            "error": "Login required"
-        }, 401
-
-
-    follower_id =
-        session["user_id"]
-
+    follower_id = session["user_id"]
 
     if follower_id == user_id:
-
         return {
-            "error":
-                "You cannot follow yourself"
+            "error": "You cannot follow yourself"
         }, 400
-
 
     conn = get_db()
 
-
     target = conn.execute("""
-        SELECT id, username
+        SELECT id
         FROM users
         WHERE id = ?
     """, (user_id,)).fetchone()
-
 
     if not target:
 
@@ -1915,7 +1542,6 @@ def follow_user(user_id):
         return {
             "error": "User not found"
         }, 404
-
 
     existing = conn.execute("""
         SELECT id
@@ -1926,7 +1552,6 @@ def follow_user(user_id):
         follower_id,
         user_id
     )).fetchone()
-
 
     if existing:
 
@@ -1956,18 +1581,14 @@ def follow_user(user_id):
 
         following = True
 
-
     follower_count = conn.execute("""
         SELECT COUNT(*)
         FROM followers
         WHERE following_id = ?
     """, (user_id,)).fetchone()[0]
 
-
     conn.commit()
-
     conn.close()
-
 
     return {
         "following": following,
@@ -1975,9 +1596,9 @@ def follow_user(user_id):
     }
 
 
-# --------------------------------------------------
+# =========================
 # UPLOAD
-# --------------------------------------------------
+# =========================
 
 @app.route(
     "/upload",
@@ -1986,53 +1607,32 @@ def follow_user(user_id):
 def upload():
 
     if "user_id" not in session:
-
         return redirect("/login")
-
 
     if request.method == "POST":
 
-        file =
-            request.files.get("file")
-
+        file = request.files.get("file")
 
         if not file:
+            return "No file selected."
 
-            return """
-            No file selected.
-            <br>
-            <a href="/upload">Back</a>
-            """
+        result = cloudinary.uploader.upload(
+            file,
+            resource_type="auto"
+        )
 
+        url = result.get("secure_url")
 
-        result =
-            cloudinary.uploader.upload(
-                file,
-                resource_type="auto"
-            )
-
-
-        url =
-            result.get("secure_url")
-
-
-        resource_type =
-            result.get(
-                "resource_type"
-            )
-
+        resource_type = result.get(
+            "resource_type"
+        )
 
         if resource_type == "video":
-
             media_type = "video"
-
         else:
-
             media_type = "image"
 
-
         conn = get_db()
-
 
         conn.execute("""
             INSERT INTO media (
@@ -2047,39 +1647,18 @@ def upload():
             media_type
         ))
 
-
         conn.commit()
-
         conn.close()
-
 
         return redirect("/")
 
-
     return """
     <html>
-
-    <head>
-
-    <meta name="viewport"
-    content="width=device-width, initial-scale=1">
-
-    <title>Upload</title>
-
-    </head>
-
-    <body style="
-        background:#000;
-        color:#fff;
-        font-family:Arial;
-        padding:30px;
-    ">
+    <body style="background:#000;color:#fff;font-family:Arial;padding:30px">
 
     <h1>Upload</h1>
 
-    <form
-        method="POST"
-        enctype="multipart/form-data">
+    <form method="POST" enctype="multipart/form-data">
 
         <input
             type="file"
@@ -2089,41 +1668,26 @@ def upload():
 
         <br><br>
 
-        <button
-            type="submit"
-            style="
-                padding:12px 25px;
-                background:#ff0050;
-                color:white;
-                border:none;
-                border-radius:8px;
-            ">
-
+        <button type="submit">
             Upload
-
         </button>
 
     </form>
 
     <br>
 
-    <a
-        href="/"
-        style="color:white;">
-
+    <a href="/" style="color:white">
         ← Back to Feed
-
     </a>
 
     </body>
-
     </html>
     """
 
 
-# --------------------------------------------------
-# RUN
-# --------------------------------------------------
+# =========================
+# START SERVER
+# =========================
 
 if __name__ == "__main__":
 
