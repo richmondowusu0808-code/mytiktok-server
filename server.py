@@ -7,7 +7,8 @@ from flask import (
     Flask,
     request,
     render_template_string,
-    redirect
+    redirect,
+    session
 )
 
 from werkzeug.security import (
@@ -16,6 +17,15 @@ from werkzeug.security import (
 )
 
 app = Flask(__name__)
+
+# =========================
+# SESSION SECURITY
+# =========================
+
+app.secret_key = os.environ.get(
+    "SECRET_KEY",
+    "temporary-secret-key-change-later"
+)
 
 
 # =========================
@@ -271,7 +281,6 @@ video, img {
 
 </div>
 
-
 <div class="feed">
 
 {% if media %}
@@ -300,7 +309,6 @@ alt="Uploaded image">
 
 {% endif %}
 
-
 <div class="side-buttons">
 
 <button
@@ -313,7 +321,6 @@ onclick="likePost(this)">
 0
 </div>
 
-
 <button
 class="action"
 onclick="openComments(this)">
@@ -323,7 +330,6 @@ onclick="openComments(this)">
 <div class="count comment-count">
 0
 </div>
-
 
 <button
 class="action"
@@ -337,7 +343,6 @@ Share
 
 </div>
 
-
 <div class="info">
 
 <div class="username">
@@ -349,7 +354,6 @@ My new video 🎬
 </div>
 
 </div>
-
 
 <div class="comments-box">
 
@@ -400,7 +404,6 @@ Tap Upload to add your first video.
 {% endif %}
 
 </div>
-
 
 <script>
 
@@ -644,7 +647,6 @@ textarea.input {
 {{ profile.bio }}
 </div>
 
-
 <div class="stats">
 
 <div>
@@ -664,7 +666,6 @@ textarea.input {
 
 </div>
 
-
 <div class="edit">
 
 <h2>✏️ Edit Profile</h2>
@@ -683,7 +684,6 @@ value="{{ profile.username }}"
 maxlength="30"
 required>
 
-
 <label>
 Bio
 </label>
@@ -694,7 +694,6 @@ name="bio"
 maxlength="150"
 placeholder="Tell people about yourself..."
 >{{ profile.bio }}</textarea>
-
 
 <button
 class="save"
@@ -707,7 +706,6 @@ Save Profile
 </form>
 
 </div>
-
 
 <a class="button" href="/">
 🎬 Feed
@@ -807,7 +805,6 @@ def profile_page():
         ).strip()
 
         if username:
-
             profile["username"] = username
 
         profile["bio"] = bio
@@ -889,4 +886,4 @@ if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=port
-    )
+    ) 
