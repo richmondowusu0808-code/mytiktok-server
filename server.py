@@ -78,6 +78,18 @@ def init_db():
         )
     """)
 
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            sender_id INTEGER NOT NULL,
+            notification_type TEXT NOT NULL,
+            media_id INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_read INTEGER DEFAULT 0
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -97,17 +109,185 @@ cloudinary.config(
 
 
 # =========================
+# NOTIFICATION HELPER
+# =========================
+
+def create_notification(
+    conn,
+    user_id,
+    sender_id,
+    notification_type,
+    media_id=None
+):
+    if user_id == sender_id:
+        return
+
+    conn.execute("""
+        INSERT INTO notifications (
+            user_id,
+            sender_id,
+            notification_type,
+            media_id
+        )
+        VALUES (?, ?, ?, ?)
+    """, (
+        user_id,
+        sender_id,
+        notification_type,
+        media_id
+    ))
+
+
+# =========================
+# NOTIFICATIONS PAGE
+# =========================
+
+NOTIFICATIONS_HTML = """
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1">
+
+<title>Notifications</title>
+
+<style>
+
+body {
+    margin: 0;
+    background: #000;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+.header {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #333;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.notification {
+    padding: 18px;
+    border-bottom: 1px solid #333;
+}
+
+.unread {
+    background: #181818;
+}
+
+.username {
+    color: #ff0050;
+    font-weight: bold;
+}
+
+.time {
+    color: #888;
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+.empty {
+    text-align: center;
+    color: #aaa;
+    padding: 50px 20px;
+}
+
+.back {
+    display: block;
+    margin: 25px auto;
+    width: fit-content;
+    color: white;
+    text-decoration: none;
+    background: #ff0050;
+    padding: 12px 22px;
+    border-radius: 8px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+    🔔 Notifications
+</div>
+
+{% if notifications %}
+
+{% for item in notifications %}
+
+<div class="notification {% if not item['is_read'] %}unread{% endif %}">
+
+    <div>
+
+        <span class="username">
+            @{{ item["username"] }}
+        </span>
+
+        {% if item["notification_type"] == "like" %}
+
+            liked your video ❤️
+
+        {% elif item["notification_type"] == "comment" %}
+
+            commented on your video 💬
+
+        {% elif item["notification_type"] == "follow" %}
+
+            started following you 👤
+
+        {% endif %}
+
+    </div>
+
+    <div class="time">
+        {{ item["created_at"] }}
+    </div>
+
+</div>
+
+{% endfor %}
+
+{% else %}
+
+<div class="empty">
+    No notifications yet.
+</div>
+
+{% endif %}
+
+<a class="back" href="/">
+    ← Back to Feed
+</a>
+
+</body>
+
+</html>
+"""
+
+
+# =========================
 # PUBLIC PROFILE
 # =========================
 
 PUBLIC_PROFILE_HTML = """
 <!DOCTYPE html>
 <html>
+
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1">
+
 <title>{{ user["username"] }}</title>
 
 <style>
+
 body {
     margin: 0;
     background: #000;
@@ -167,7 +347,9 @@ body {
     margin-top: 20px;
     color: white;
 }
+
 </style>
+
 </head>
 
 <body>
@@ -188,6 +370,7 @@ body {
             <div class="stat-number">
                 {{ following_count }}
             </div>
+
             <div class="stat-label">
                 Following
             </div>
@@ -197,6 +380,7 @@ body {
             <div class="stat-number" id="followerCount">
                 {{ follower_count }}
             </div>
+
             <div class="stat-label">
                 Followers
             </div>
@@ -206,12 +390,14 @@ body {
             <div class="stat-number">
                 {{ post_count }}
             </div>
+
             <div class="stat-label">
                 Posts
             </div>
         </div>
 
     </div>
+
 
     {% if current_user_id and current_user_id != user["id"] %}
 
@@ -231,9 +417,11 @@ body {
     {% elif not current_user_id %}
 
     <a href="/login">
+
         <button class="follow-button">
             Login to Follow
         </button>
+
     </a>
 
     {% endif %}
@@ -246,8 +434,11 @@ body {
 
 </div>
 
+
 <script>
+
 async function toggleFollow() {
+
     const response = await fetch(
         "/follow/{{ user['id'] }}",
         {
@@ -261,15 +452,14 @@ async function toggleFollow() {
 
     const data = await response.json();
 
-    const button = document.getElementById(
-        "followButton"
-    );
+    const button =
+        document.getElementById("followButton");
 
-    const count = document.getElementById(
-        "followerCount"
-    );
+    const count =
+        document.getElementById("followerCount");
 
-    button.innerText = data.following
+    button.innerText =
+        data.following
         ? "Following"
         : "Follow";
 
@@ -278,8 +468,10 @@ async function toggleFollow() {
         data.following
     );
 
-    count.innerText = data.follower_count;
+    count.innerText =
+        data.follower_count;
 }
+
 </script>
 
 </body>
@@ -294,10 +486,14 @@ async function toggleFollow() {
 PROFILE_HTML = """
 <!DOCTYPE html>
 <html>
+
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1">
 
 <style>
+
 body {
     margin: 0;
     background: #000;
@@ -346,7 +542,26 @@ body {
     text-decoration: none;
     border-radius: 8px;
 }
+
+.notification-button {
+    display: inline-block;
+    padding: 12px 20px;
+    margin: 5px;
+    background: #333;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+}
+
+.badge {
+    background: #ff0050;
+    border-radius: 50%;
+    padding: 3px 7px;
+    font-size: 12px;
+}
+
 </style>
+
 </head>
 
 <body>
@@ -367,6 +582,7 @@ body {
             <div class="number">
                 {{ following_count }}
             </div>
+
             <div class="label">
                 Following
             </div>
@@ -376,6 +592,7 @@ body {
             <div class="number">
                 {{ follower_count }}
             </div>
+
             <div class="label">
                 Followers
             </div>
@@ -385,12 +602,32 @@ body {
             <div class="number">
                 {{ post_count }}
             </div>
+
             <div class="label">
                 Posts
             </div>
         </div>
 
     </div>
+
+
+    <a class="notification-button"
+       href="/notifications">
+
+        🔔 Notifications
+
+        {% if notification_count > 0 %}
+
+        <span class="badge">
+            {{ notification_count }}
+        </span>
+
+        {% endif %}
+
+    </a>
+
+
+    <br>
 
     <a class="button" href="/">
         Feed
@@ -407,6 +644,7 @@ body {
 </div>
 
 </body>
+
 </html>
 """
 
@@ -522,6 +760,25 @@ body {
     text-decoration: none;
 }
 
+.notification-link {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 500;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 14px;
+    border-radius: 8px;
+    text-decoration: none;
+}
+
+.badge {
+    background: #ff0050;
+    border-radius: 50%;
+    padding: 3px 7px;
+    font-size: 12px;
+}
+
 .comment-box {
     position: fixed;
     left: 0;
@@ -606,6 +863,27 @@ body {
 
 <body>
 
+
+{% if session.get("user_id") %}
+
+<a class="notification-link"
+   href="/notifications">
+
+    🔔
+
+    {% if notification_count > 0 %}
+
+    <span class="badge">
+        {{ notification_count }}
+    </span>
+
+    {% endif %}
+
+</a>
+
+{% endif %}
+
+
 <div class="top-buttons">
 
 {% if session.get("user_id") %}
@@ -634,6 +912,7 @@ Login
 {% for item in media %}
 
 <div class="video-card">
+
 
 {% if item["media_type"] == "video" %}
 
@@ -676,7 +955,7 @@ Login
     )">
 
     ♥
-    
+
 </button>
 
 <span
@@ -760,9 +1039,14 @@ Login
 {% else %}
 
 <p>
-    <a href="/login" style="color:#ff0050;">
+
+    <a href="/login"
+       style="color:#ff0050;">
+
         Login to comment
+
     </a>
+
 </p>
 
 {% endif %}
@@ -813,33 +1097,41 @@ async function openComments(mediaId) {
         "commentsList"
     );
 
-    list.innerHTML = "<p>Loading...</p>";
+    list.innerHTML =
+        "<p>Loading...</p>";
 
     const response = await fetch(
         "/comments/" + mediaId
     );
 
     if (!response.ok) {
+
         list.innerHTML =
             "<p>Could not load comments.</p>";
+
         return;
     }
 
-    const comments = await response.json();
+    const comments =
+        await response.json();
 
     list.innerHTML = "";
 
     if (comments.length === 0) {
+
         list.innerHTML =
             "<p>No comments yet.</p>";
+
         return;
     }
 
     comments.forEach(function(comment) {
+
         addCommentToList(
             comment.username,
             comment.text
         );
+
     });
 }
 
@@ -857,20 +1149,27 @@ function closeComments() {
 document.addEventListener(
     "keydown",
     function(event) {
+
         if (event.key === "Escape") {
             closeComments();
         }
+
     }
 );
 
 
-function addCommentToList(username, text) {
+function addCommentToList(
+    username,
+    text
+) {
 
-    const list = document.getElementById(
-        "commentsList"
-    );
+    const list =
+        document.getElementById(
+            "commentsList"
+        );
 
-    const div = document.createElement("div");
+    const div =
+        document.createElement("div");
 
     div.className = "comment";
 
@@ -878,15 +1177,21 @@ function addCommentToList(username, text) {
     const userDiv =
         document.createElement("div");
 
-    userDiv.className = "comment-user";
-    userDiv.innerText = "@" + username;
+    userDiv.className =
+        "comment-user";
+
+    userDiv.innerText =
+        "@" + username;
 
 
     const textDiv =
         document.createElement("div");
 
-    textDiv.className = "comment-text";
-    textDiv.innerText = text;
+    textDiv.className =
+        "comment-text";
+
+    textDiv.innerText =
+        text;
 
 
     div.appendChild(userDiv);
@@ -904,33 +1209,42 @@ async function submitComment(event) {
         return;
     }
 
-    const input = document.getElementById(
-        "commentInput"
-    );
+    const input =
+        document.getElementById(
+            "commentInput"
+        );
 
-    const text = input.value.trim();
+    const text =
+        input.value.trim();
 
     if (!text) {
         return;
     }
 
-    const formData = new FormData();
+    const formData =
+        new FormData();
 
-    formData.append("text", text);
-
-    const response = await fetch(
-        "/comment/" + currentCommentMediaId,
-        {
-            method: "POST",
-            body: formData
-        }
+    formData.append(
+        "text",
+        text
     );
+
+    const response =
+        await fetch(
+            "/comment/" +
+            currentCommentMediaId,
+            {
+                method: "POST",
+                body: formData
+            }
+        );
 
     if (!response.ok) {
         return;
     }
 
-    const data = await response.json();
+    const data =
+        await response.json();
 
     input.value = "";
 
@@ -943,6 +1257,7 @@ async function submitComment(event) {
 </script>
 
 </body>
+
 </html>
 """
 
@@ -1005,11 +1320,23 @@ def home():
             "liked": liked
         })
 
+    notification_count = 0
+
+    if current_user_id:
+
+        notification_count = conn.execute("""
+            SELECT COUNT(*)
+            FROM notifications
+            WHERE user_id = ?
+            AND is_read = 0
+        """, (current_user_id,)).fetchone()[0]
+
     conn.close()
 
     return render_template_string(
         HTML,
-        media=media
+        media=media,
+        notification_count=notification_count
     )
 
 
@@ -1024,11 +1351,27 @@ def home():
 def like_media(media_id):
 
     if "user_id" not in session:
-        return {"error": "Login required"}, 401
+        return {
+            "error": "Login required"
+        }, 401
 
     user_id = session["user_id"]
 
     conn = get_db()
+
+    media = conn.execute("""
+        SELECT user_id
+        FROM media
+        WHERE id = ?
+    """, (media_id,)).fetchone()
+
+    if not media:
+
+        conn.close()
+
+        return {
+            "error": "Media not found"
+        }, 404
 
     existing = conn.execute("""
         SELECT id
@@ -1067,6 +1410,14 @@ def like_media(media_id):
         ))
 
         liked = True
+
+        create_notification(
+            conn,
+            media["user_id"],
+            user_id,
+            "like",
+            media_id
+        )
 
     like_count = conn.execute("""
         SELECT COUNT(*)
@@ -1126,7 +1477,9 @@ def get_comments(media_id):
 def add_comment(media_id):
 
     if "user_id" not in session:
-        return {"error": "Login required"}, 401
+        return {
+            "error": "Login required"
+        }, 401
 
     text = request.form.get(
         "text",
@@ -1134,11 +1487,13 @@ def add_comment(media_id):
     ).strip()
 
     if not text:
+
         return {
             "error": "Comment cannot be empty"
         }, 400
 
     if len(text) > 500:
+
         return {
             "error": "Comment is too long"
         }, 400
@@ -1148,13 +1503,15 @@ def add_comment(media_id):
     conn = get_db()
 
     media = conn.execute("""
-        SELECT id
+        SELECT id, user_id
         FROM media
         WHERE id = ?
     """, (media_id,)).fetchone()
 
     if not media:
+
         conn.close()
+
         return {
             "error": "Media not found"
         }, 404
@@ -1171,6 +1528,14 @@ def add_comment(media_id):
         media_id,
         text
     ))
+
+    create_notification(
+        conn,
+        media["user_id"],
+        user_id,
+        "comment",
+        media_id
+    )
 
     user = conn.execute("""
         SELECT username
@@ -1424,6 +1789,13 @@ def profile():
         WHERE follower_id = ?
     """, (user_id,)).fetchone()[0]
 
+    notification_count = conn.execute("""
+        SELECT COUNT(*)
+        FROM notifications
+        WHERE user_id = ?
+        AND is_read = 0
+    """, (user_id,)).fetchone()[0]
+
     conn.close()
 
     return render_template_string(
@@ -1431,7 +1803,51 @@ def profile():
         user=user,
         post_count=post_count,
         follower_count=follower_count,
-        following_count=following_count
+        following_count=following_count,
+        notification_count=notification_count
+    )
+
+
+# =========================
+# NOTIFICATIONS
+# =========================
+
+@app.route("/notifications")
+def notifications():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    user_id = session["user_id"]
+
+    conn = get_db()
+
+    notifications = conn.execute("""
+        SELECT
+            notifications.id,
+            notifications.notification_type,
+            notifications.created_at,
+            notifications.is_read,
+            users.username
+        FROM notifications
+        JOIN users
+            ON users.id = notifications.sender_id
+        WHERE notifications.user_id = ?
+        ORDER BY notifications.id DESC
+    """, (user_id,)).fetchall()
+
+    conn.execute("""
+        UPDATE notifications
+        SET is_read = 1
+        WHERE user_id = ?
+    """, (user_id,))
+
+    conn.commit()
+    conn.close()
+
+    return render_template_string(
+        NOTIFICATIONS_HTML,
+        notifications=notifications
     )
 
 
@@ -1518,11 +1934,14 @@ def public_profile(username):
 def follow_user(user_id):
 
     if "user_id" not in session:
-        return {"error": "Login required"}, 401
+        return {
+            "error": "Login required"
+        }, 401
 
     follower_id = session["user_id"]
 
     if follower_id == user_id:
+
         return {
             "error": "You cannot follow yourself"
         }, 400
@@ -1580,6 +1999,13 @@ def follow_user(user_id):
         ))
 
         following = True
+
+        create_notification(
+            conn,
+            user_id,
+            follower_id,
+            "follow"
+        )
 
     follower_count = conn.execute("""
         SELECT COUNT(*)
