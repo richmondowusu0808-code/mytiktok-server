@@ -279,6 +279,10 @@ video, img {
 👤 Profile
 </a>
 
+<a class="nav-button" href="/login">
+🔐 Login
+</a>
+
 <a class="nav-button" href="/signup">
 📝 Sign Up
 </a>
@@ -653,6 +657,155 @@ Create Account
 
 <div class="login">
 
+<a href="/login">
+Already have an account? Login
+</a>
+
+<br><br>
+
+<a href="/">
+← Back to Feed
+</a>
+
+</div>
+
+</div>
+
+</body>
+
+</html>
+"""
+
+
+# =========================
+# LOGIN HTML
+# =========================
+
+LOGIN_HTML = """
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1">
+
+<title>Login - MyTikTok</title>
+
+<style>
+
+body {
+    margin: 0;
+    background: #111;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    max-width: 400px;
+    margin: 60px auto;
+    padding: 25px;
+}
+
+h1 {
+    text-align: center;
+}
+
+.input {
+    width: 100%;
+    padding: 14px;
+    margin: 8px 0 15px;
+    border: none;
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+
+.button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 25px;
+    background: white;
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.error {
+    background: #500;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.signup {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.signup a {
+    color: white;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🔐 Login</h1>
+
+{% if error %}
+
+<div class="error">
+{{ error }}
+</div>
+
+{% endif %}
+
+<form action="/login" method="post">
+
+<label>
+Username
+</label>
+
+<input
+class="input"
+type="text"
+name="username"
+required>
+
+<label>
+Password
+</label>
+
+<input
+class="input"
+type="password"
+name="password"
+required>
+
+<button
+class="button"
+type="submit">
+
+Login
+
+</button>
+
+</form>
+
+<div class="signup">
+
+<a href="/signup">
+Create a new account
+</a>
+
+<br><br>
+
 <a href="/">
 ← Back to Feed
 </a>
@@ -871,6 +1024,10 @@ Save Profile
 📤 Upload
 </a>
 
+<a class="button" href="/logout">
+🚪 Logout
+</a>
+
 </div>
 
 </body>
@@ -1034,6 +1191,93 @@ def signup():
 
 
 # =========================
+# LOGIN ROUTE
+# =========================
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+
+    if request.method == "GET":
+
+        return render_template_string(
+            LOGIN_HTML,
+            error=""
+        )
+
+    username = request.form.get(
+        "username",
+        ""
+    ).strip()
+
+    password = request.form.get(
+        "password",
+        ""
+    )
+
+    if not username or not password:
+
+        return render_template_string(
+            LOGIN_HTML,
+            error="Please enter your username and password."
+        )
+
+    conn = sqlite3.connect("app.db")
+
+    conn.row_factory = sqlite3.Row
+
+    user = conn.execute(
+        """
+        SELECT *
+        FROM users
+        WHERE username = ?
+        """,
+        (username,)
+    ).fetchone()
+
+    conn.close()
+
+    if user is None:
+
+        return render_template_string(
+            LOGIN_HTML,
+            error="Invalid username or password."
+        )
+
+    if not check_password_hash(
+        user["password"],
+        password
+    ):
+
+        return render_template_string(
+            LOGIN_HTML,
+            error="Invalid username or password."
+        )
+
+    session["user_id"] = user["id"]
+    session["username"] = user["username"]
+
+    profile["username"] = user["username"]
+    profile["bio"] = user["bio"]
+
+    return redirect("/profile")
+
+
+# =========================
+# LOGOUT ROUTE
+# =========================
+
+@app.route("/logout")
+def logout():
+
+    session.clear()
+
+    profile["username"] = "user"
+    profile["bio"] = "Welcome to my profile 🎬"
+
+    return redirect("/")
+
+
+# =========================
 # PROFILE ROUTE
 # =========================
 
@@ -1057,6 +1301,28 @@ def profile_page():
             profile["username"] = username
 
         profile["bio"] = bio
+
+        if "user_id" in session:
+
+            conn = sqlite3.connect("app.db")
+
+            conn.execute(
+                """
+                UPDATE users
+                SET username = ?, bio = ?
+                WHERE id = ?
+                """,
+                (
+                    username,
+                    bio,
+                    session["user_id"]
+                )
+            )
+
+            conn.commit()
+            conn.close()
+
+            session["username"] = username
 
         return redirect("/profile")
 
