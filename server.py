@@ -96,7 +96,56 @@ def init_db():
 
 
 init_db()
+@app.route("/manifest.json")
+def manifest():
+    manifest_data = {
+        "name": "MyTikTok",
+        "short_name": "MyTikTok",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "orientation": "portrait",
+        "background_color": "#000000",
+        "theme_color": "#000000",
+        "description": "MyTikTok social video app",
+        "icons": []
+    }
 
+    return app.response_class(
+        response=json.dumps(manifest_data),
+        mimetype="application/manifest+json"
+    )
+
+
+@app.route("/sw.js")
+def service_worker():
+    js = """
+const CACHE_NAME = "mytiktok-v1";
+
+self.addEventListener("install", event => {
+    self.skipWaiting();
+});
+
+self.addEventListener("activate", event => {
+    event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener("fetch", event => {
+    if (event.request.method !== "GET") {
+        return;
+    }
+
+    event.respondWith(
+        fetch(event.request)
+            .catch(() => caches.match(event.request))
+    );
+});
+"""
+
+    return app.response_class(
+        response=js,
+        mimetype="application/javascript"
+    )
 
 # =========================
 # CLOUDINARY
@@ -147,7 +196,10 @@ NOTIFICATIONS_HTML = """
 <!DOCTYPE html>
 <html>
 
-<head>
+<head><link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 
 <meta name="viewport"
 content="width=device-width, initial-scale=1">
@@ -644,7 +696,13 @@ body {
 
 </div>
 
-</body>
+<script>
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js")
+        .then(() => console.log("Service worker registered"))
+        .catch(err => console.log("Service worker error:", err));
+}
+</script></body>
 
 </html>
 """
