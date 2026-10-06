@@ -317,7 +317,17 @@ body {
 <a class="back" href="/">
     ← Back to Feed
 </a>
-
+<script>
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js")
+        .then(() => {
+            console.log("MyTikTok service worker registered");
+        })
+        .catch(error => {
+            console.log("Service worker error:", error);
+        });
+}
+</script>
 </body>
 
 </html>
@@ -333,7 +343,8 @@ PUBLIC_PROFILE_HTML = """
 <html>
 
 <head>
-
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#000000">
 <meta name="viewport"
 content="width=device-width, initial-scale=1">
 
