@@ -328,6 +328,19 @@ if ("serviceWorker" in navigator) {
         });
 }
 </script>
+
+<script>
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js")
+        .then(() => {
+            console.log("MyTikTok service worker registered");
+        })
+        .catch(error => {
+            console.log("Service worker error:", error);
+        });
+}
+
+</script>
 </body>
 
 </html>
@@ -553,6 +566,16 @@ PROFILE_HTML = """
 
 <head>
 
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#000000">
+<meta name="description" content="MyTikTok social video app">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1">
+
+<title>MyTikTok</title>
 <meta name="viewport"
 content="width=device-width, initial-scale=1">
 
